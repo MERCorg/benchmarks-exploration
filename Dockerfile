@@ -47,3 +47,6 @@ RUN python3 -m venv /root/.venv && /root/.venv/bin/pip install /root/merc-py
 # Copy the experiments into the container
 COPY ./cases /root/cases/
 COPY ./scripts /root/scripts/
+
+# Prepare the examples
+RUN python3 /root/scripts/prepare.py /root/mCRL2/build/stage/bin/ /root/cases/
