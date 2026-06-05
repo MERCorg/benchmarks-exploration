@@ -1,0 +1,67 @@
+sort Position = struct Red | Blue | Empty;
+     Row = List(Position);
+     Board = List(Row);
+
+map  N,M: Pos;
+     At: Nat # Nat # Board -> Position;
+     At: Nat # Row -> Position;
+     Put: Position # Nat # Nat # Board -> Board;
+     Put: Position # Nat # Row -> Row;
+     Wins: Position # Board -> Bool;
+     CheckRedInLeftMostColumn,CheckBlueInBottomRow: Nat # Board -> Bool;
+     Connect: Nat # Nat # Board # Position -> Bool;
+
+var  b: Board;
+     r: Row;
+     p,p': Position;
+     x,y: Nat;
+eqn  N  =  4;
+     M  =  4;
+     At(x, y, [])  =  Empty;
+     (x == 0)  ->  At(x, y, r |> b)  =  Empty;
+     (y == 0)  ->  At(x, y, r |> b)  =  Empty;
+     (y == 1)  ->  At(x, y, r |> b)  =  At(x, r);
+     (y > 1)  ->  At(x, y, r |> b)  =  At(x, Int2Pos(y - 1), b);
+     At(x, [])  =  Empty;
+     (x == 1)  ->  At(x, p |> r)  =  p;
+     (x > 1)  ->  At(x, p |> r)  =  At(Int2Pos(x - 1), r);
+     (y == 1)  ->  Put(p, x, y, r |> b)  =  Put(p, x, r) |> b;
+     (y > 1)  ->  Put(p, x, y, r |> b)  =  r |> Put(p, x, Int2Pos(y - 1), b);
+     (x == 1)  ->  Put(p, x, p' |> r)  =  p |> r;
+     (x > 1)  ->  Put(p, x, p' |> r)  =  p' |> Put(p, Int2Pos(x - 1), r);
+     Wins(Red, b)  =  CheckRedInLeftMostColumn(1, b);
+     (y < M)  ->  CheckRedInLeftMostColumn(y, b)  =  Connect(1, y, b, Red) || CheckRedInLeftMostColumn(y + 1, Put(Empty, 1, y, b));
+     (y == M)  ->  CheckRedInLeftMostColumn(y, b)  =  Connect(1, y, b, Red);
+     Wins(Blue, b)  =  CheckBlueInBottomRow(1, b);
+     (x < N)  ->  CheckBlueInBottomRow(x, b)  =  Connect(x, 1, b, Blue) || CheckBlueInBottomRow(x + 1, Put(Empty, x, 1, b));
+     (x == N)  ->  CheckBlueInBottomRow(x, b)  =  Connect(x, 1, b, Blue);
+     (At(x, y, b) != p)  ->  Connect(x, y, b, p)  =  false;
+     (x == 0)  ->  Connect(x, y, b, p)  =  false;
+     (y == 0)  ->  Connect(x, y, b, p)  =  false;
+     (x > N)  ->  Connect(x, y, b, p)  =  false;
+     (y > M)  ->  Connect(x, y, b, p)  =  false;
+     (x == N && At(x, y, b) == Red && 0 < y && y <= M)  ->  Connect(x, y, b, Red)  =  true;
+     (y == M && At(x, y, b) == Blue && 0 < x && x <= N)  ->  Connect(x, y, b, Blue)  =  true;
+     (At(x, y, b) == p && 0 < x && (x < N || x == N && p == Blue) && 0 < y && (y < M || y == M && p == Red))  ->  Connect(x, y, b, p)  =  Connect(x + 1, y, b', p) || Connect(x + 1, Int2Nat(y - 1), b', p) || Connect(x, Int2Nat(y - 1), b', p) || Connect(Int2Nat(x - 1), y, b', p) || Connect(Int2Nat(x - 1), y + 1, b', p) || Connect(x, y + 1, b', p) whr b' = Put(Empty, x, y, b) end;
+
+act  RedMove,BlueMove: Pos # Pos;
+     RedWins,BlueWins;
+
+proc P(b_Hex: List(List(Position)), RedMoves_Hex: Bool) =
+       sum x_Hex,y_Hex: Pos.
+         (RedMoves_Hex && x_Hex <= 4 && y_Hex <= 4 && At(x_Hex, y_Hex, b_Hex) == Empty && !(Connect(1, 1, b_Hex, Blue) || Connect(2, 1, Put(Empty, 1, 1, b_Hex), Blue) || Connect(3, 1, Put(Empty, 2, 1, Put(Empty, 1, 1, b_Hex)), Blue) || Connect(4, 1, Put(Empty, 3, 1, Put(Empty, 2, 1, Put(Empty, 1, 1, b_Hex))), Blue))) ->
+         RedMove(x_Hex, y_Hex) .
+         P(b_Hex = Put(Red, x_Hex, y_Hex, b_Hex), RedMoves_Hex = false)
+     + sum x_Hex1,y_Hex1: Pos.
+         (!RedMoves_Hex && x_Hex1 <= 4 && y_Hex1 <= 4 && At(x_Hex1, y_Hex1, b_Hex) == Empty && !(Connect(1, 1, b_Hex, Red) || Connect(1, 2, Put(Empty, 1, 1, b_Hex), Red) || Connect(1, 3, Put(Empty, 1, 2, Put(Empty, 1, 1, b_Hex)), Red) || Connect(1, 4, Put(Empty, 1, 3, Put(Empty, 1, 2, Put(Empty, 1, 1, b_Hex))), Red))) ->
+         BlueMove(x_Hex1, y_Hex1) .
+         P(b_Hex = Put(Blue, x_Hex1, y_Hex1, b_Hex), RedMoves_Hex = true)
+     + (Connect(1, 1, b_Hex, Red) || Connect(1, 2, Put(Empty, 1, 1, b_Hex), Red) || Connect(1, 3, Put(Empty, 1, 2, Put(Empty, 1, 1, b_Hex)), Red) || Connect(1, 4, Put(Empty, 1, 3, Put(Empty, 1, 2, Put(Empty, 1, 1, b_Hex))), Red)) ->
+         RedWins .
+         P()
+     + (Connect(1, 1, b_Hex, Blue) || Connect(2, 1, Put(Empty, 1, 1, b_Hex), Blue) || Connect(3, 1, Put(Empty, 2, 1, Put(Empty, 1, 1, b_Hex)), Blue) || Connect(4, 1, Put(Empty, 3, 1, Put(Empty, 2, 1, Put(Empty, 1, 1, b_Hex))), Blue)) ->
+         BlueWins .
+         P()
+     + delta;
+
+init P([[Empty, Empty, Empty, Empty], [Empty, Empty, Empty, Empty], [Empty, Empty, Empty, Empty], [Empty, Empty, Empty, Empty]], true);

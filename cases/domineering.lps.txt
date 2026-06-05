@@ -1,0 +1,55 @@
+sort Position = struct Full | Empty;
+     Row = List(Position);
+     Board = List(Row);
+
+map  N,M: Pos;
+     At: Pos # Pos # Board -> Position;
+     At: Pos # Row -> Position;
+     Put: Position # Pos # Pos # Board -> Board;
+     Put: Position # Pos # Row -> Row;
+     NoHorizontalSpot,NoVerticalSpot: Pos # Pos # Board -> Bool;
+
+var  b: Board;
+     r: Row;
+     p,p': Position;
+     x,y: Pos;
+eqn  N  =  5;
+     M  =  5;
+     At(x, y, [])  =  Empty;
+     (y == 1)  ->  At(x, y, r |> b)  =  At(x, r);
+     (y > 1)  ->  At(x, y, r |> b)  =  At(x, Int2Pos(y - 1), b);
+     At(y, [])  =  Empty;
+     (x == 1)  ->  At(x, p |> r)  =  p;
+     (x > 1)  ->  At(x, p |> r)  =  At(Int2Pos(x - 1), r);
+     (y == 1)  ->  Put(p, x, y, r |> b)  =  Put(p, x, r) |> b;
+     (y > 1)  ->  Put(p, x, y, r |> b)  =  r |> Put(p, x, Int2Pos(y - 1), b);
+     (x == 1)  ->  Put(p, x, p' |> r)  =  p |> r;
+     (x > 1)  ->  Put(p, x, p' |> r)  =  p' |> Put(p, Int2Pos(x - 1), r);
+     (y == M)  ->  NoVerticalSpot(x, y, b)  =  true;
+     (x < N && y < M)  ->  NoVerticalSpot(x, y, b)  =  (At(x, y, b) == Full || At(x, y + 1, b) == Full) && NoVerticalSpot(x + 1, y, b);
+     (x == N && y < M)  ->  NoVerticalSpot(x, y, b)  =  (At(x, y, b) == Full || At(x, y + 1, b) == Full) && NoVerticalSpot(1, y + 1, b);
+     (x == N)  ->  NoHorizontalSpot(x, y, b)  =  true;
+     (x < N && y < M)  ->  NoHorizontalSpot(x, y, b)  =  (At(x, y, b) == Full || At(x + 1, y, b) == Full) && NoHorizontalSpot(x, y + 1, b);
+     (x < N && y == M)  ->  NoHorizontalSpot(x, y, b)  =  (At(x, y, b) == Full || At(x + 1, y, b) == Full) && NoHorizontalSpot(x + 1, 1, b);
+
+act  Player1,Player2: Pos # Pos # Pos # Pos;
+     Player1Wins,Player2Wins;
+
+proc P(b_Domineering: List(List(Position)), Player1Moves_Domineering: Bool) =
+       (!Player1Moves_Domineering && (At(1, 1, b_Domineering) == Full || At(2, 1, b_Domineering) == Full) && (At(1, 2, b_Domineering) == Full || At(2, 2, b_Domineering) == Full) && (At(1, 3, b_Domineering) == Full || At(2, 3, b_Domineering) == Full) && (At(1, 4, b_Domineering) == Full || At(2, 4, b_Domineering) == Full) && (At(1, 5, b_Domineering) == Full || At(2, 5, b_Domineering) == Full) && (At(2, 1, b_Domineering) == Full || At(3, 1, b_Domineering) == Full) && (At(2, 2, b_Domineering) == Full || At(3, 2, b_Domineering) == Full) && (At(2, 3, b_Domineering) == Full || At(3, 3, b_Domineering) == Full) && (At(2, 4, b_Domineering) == Full || At(3, 4, b_Domineering) == Full) && (At(2, 5, b_Domineering) == Full || At(3, 5, b_Domineering) == Full) && (At(3, 1, b_Domineering) == Full || At(4, 1, b_Domineering) == Full) && (At(3, 2, b_Domineering) == Full || At(4, 2, b_Domineering) == Full) && (At(3, 3, b_Domineering) == Full || At(4, 3, b_Domineering) == Full) && (At(3, 4, b_Domineering) == Full || At(4, 4, b_Domineering) == Full) && (At(3, 5, b_Domineering) == Full || At(4, 5, b_Domineering) == Full) && (At(4, 1, b_Domineering) == Full || At(5, 1, b_Domineering) == Full) && (At(4, 2, b_Domineering) == Full || At(5, 2, b_Domineering) == Full) && (At(4, 3, b_Domineering) == Full || At(5, 3, b_Domineering) == Full) && (At(4, 4, b_Domineering) == Full || At(5, 4, b_Domineering) == Full) && (At(4, 5, b_Domineering) == Full || At(5, 5, b_Domineering) == Full)) ->
+         Player1Wins .
+         P()
+     + (Player1Moves_Domineering && (At(1, 1, b_Domineering) == Full || At(1, 2, b_Domineering) == Full) && (At(2, 1, b_Domineering) == Full || At(2, 2, b_Domineering) == Full) && (At(3, 1, b_Domineering) == Full || At(3, 2, b_Domineering) == Full) && (At(4, 1, b_Domineering) == Full || At(4, 2, b_Domineering) == Full) && (At(5, 1, b_Domineering) == Full || At(5, 2, b_Domineering) == Full) && (At(1, 2, b_Domineering) == Full || At(1, 3, b_Domineering) == Full) && (At(2, 2, b_Domineering) == Full || At(2, 3, b_Domineering) == Full) && (At(3, 2, b_Domineering) == Full || At(3, 3, b_Domineering) == Full) && (At(4, 2, b_Domineering) == Full || At(4, 3, b_Domineering) == Full) && (At(5, 2, b_Domineering) == Full || At(5, 3, b_Domineering) == Full) && (At(1, 3, b_Domineering) == Full || At(1, 4, b_Domineering) == Full) && (At(2, 3, b_Domineering) == Full || At(2, 4, b_Domineering) == Full) && (At(3, 3, b_Domineering) == Full || At(3, 4, b_Domineering) == Full) && (At(4, 3, b_Domineering) == Full || At(4, 4, b_Domineering) == Full) && (At(5, 3, b_Domineering) == Full || At(5, 4, b_Domineering) == Full) && (At(1, 4, b_Domineering) == Full || At(1, 5, b_Domineering) == Full) && (At(2, 4, b_Domineering) == Full || At(2, 5, b_Domineering) == Full) && (At(3, 4, b_Domineering) == Full || At(3, 5, b_Domineering) == Full) && (At(4, 4, b_Domineering) == Full || At(4, 5, b_Domineering) == Full) && (At(5, 4, b_Domineering) == Full || At(5, 5, b_Domineering) == Full)) ->
+         Player2Wins .
+         P()
+     + sum x_Domineering,y_Domineering: Pos.
+         (!Player1Moves_Domineering && x_Domineering < 5 && y_Domineering <= 5 && At(x_Domineering, y_Domineering, b_Domineering) == Empty && At(x_Domineering + 1, y_Domineering, b_Domineering) == Empty) ->
+         Player2(x_Domineering, y_Domineering, x_Domineering + 1, y_Domineering) .
+         P(b_Domineering = Put(Full, x_Domineering + 1, y_Domineering, Put(Full, x_Domineering, y_Domineering, b_Domineering)), Player1Moves_Domineering = true)
+     + sum x_Domineering1,y_Domineering1: Pos.
+         (Player1Moves_Domineering && x_Domineering1 <= 5 && y_Domineering1 < 5 && At(x_Domineering1, y_Domineering1, b_Domineering) == Empty && At(x_Domineering1, y_Domineering1 + 1, b_Domineering) == Empty) ->
+         Player1(x_Domineering1, y_Domineering1, x_Domineering1, y_Domineering1 + 1) .
+         P(b_Domineering = Put(Full, x_Domineering1, y_Domineering1 + 1, Put(Full, x_Domineering1, y_Domineering1, b_Domineering)), Player1Moves_Domineering = false)
+     + delta;
+
+init P([[Empty, Empty, Empty, Empty, Empty], [Empty, Empty, Empty, Empty, Empty], [Empty, Empty, Empty, Empty, Empty], [Empty, Empty, Empty, Empty, Empty], [Empty, Empty, Empty, Empty, Empty]], true);

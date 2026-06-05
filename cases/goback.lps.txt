@@ -1,0 +1,14 @@
+map  N: Pos;
+
+eqn  N  =  1000;
+
+act  a;
+
+proc P(i_X: Pos) =
+       sum j_X: Pos.
+         (j_X <= i_X + 1 && j_X <= 1000) ->
+         a .
+         P(i_X = j_X)
+     + delta;
+
+init P(1);

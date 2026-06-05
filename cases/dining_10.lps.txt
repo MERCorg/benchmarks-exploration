@@ -1,0 +1,843 @@
+map  K: Pos;
+
+eqn  K  =  10;
+
+act  get,_get,__get,put,_put,__put: Pos # Pos;
+     eat: Pos;
+
+glob dc,dc1,dc2,dc3,dc4,dc5,dc6,dc7,dc8,dc9,dc10,dc11,dc12,dc13,dc14,dc15,dc16,dc17,dc18,dc19: Pos;
+
+proc P(s1_Fork,m_Fork,s2_Phil,s3_Fork1,m_Fork2,s4_Phil1,s5_Fork1,m_Fork4,s6_Phil1,s7_Fork1,m_Fork6,s8_Phil1,s9_Fork1,m_Fork8,s10_Phil1,s11_Fork1,m_Fork10,s12_Phil1,s13_Fork1,m_Fork12,s14_Phil1,s15_Fork1,m_Fork14,s16_Phil1,s17_Fork1,m_Fork16,s18_Phil1,s19_Fork1,m_Fork18,s20_Phil1: Pos) =
+       (s2_Phil == 3) ->
+         eat(1) .
+         P(s2_Phil = 4)
+     + sum e1_Phil: Bool.
+         ((s1_Fork == 2 && if(e1_Phil, s2_Phil == 5, s2_Phil == 4)) && 1 == m_Fork && if(e1_Phil, 2, 1) == 1) ->
+         __put(1, if(e1_Phil, 2, 1)) .
+         P(s1_Fork = 1, m_Fork = dc1, s2_Phil = if(e1_Phil, 1, 5))
+     + sum e_Phil: Bool.
+         ((s1_Fork == 1 && if(e_Phil, s2_Phil == 2, s2_Phil == 1)) && if(e_Phil, 2, 1) == 1) ->
+         __get(1, if(e_Phil, 2, 1)) .
+         P(s1_Fork = 2, m_Fork = 1, s2_Phil = if(e_Phil, 3, 2))
+     + (s4_Phil1 == 3) ->
+         eat(2) .
+         P(s4_Phil1 = 4)
+     + sum e3_Phil2: Bool.
+         ((s3_Fork1 == 2 && if(e3_Phil2, s4_Phil1 == 5, s4_Phil1 == 4)) && 2 == m_Fork2 && if(e3_Phil2, 3, 2) == 2) ->
+         __put(2, if(e3_Phil2, 3, 2)) .
+         P(s3_Fork1 = 1, m_Fork2 = dc3, s4_Phil1 = if(e3_Phil2, 1, 5))
+     + sum e2_Phil2: Bool.
+         ((s3_Fork1 == 1 && if(e2_Phil2, s4_Phil1 == 2, s4_Phil1 == 1)) && if(e2_Phil2, 3, 2) == 2) ->
+         __get(2, if(e2_Phil2, 3, 2)) .
+         P(s3_Fork1 = 2, m_Fork2 = 2, s4_Phil1 = if(e2_Phil2, 3, 2))
+     + (s6_Phil1 == 3) ->
+         eat(3) .
+         P(s6_Phil1 = 4)
+     + sum e5_Phil2: Bool.
+         ((s5_Fork1 == 2 && if(e5_Phil2, s6_Phil1 == 5, s6_Phil1 == 4)) && 3 == m_Fork4 && if(e5_Phil2, 4, 3) == 3) ->
+         __put(3, if(e5_Phil2, 4, 3)) .
+         P(s5_Fork1 = 1, m_Fork4 = dc5, s6_Phil1 = if(e5_Phil2, 1, 5))
+     + sum e4_Phil2: Bool.
+         ((s5_Fork1 == 1 && if(e4_Phil2, s6_Phil1 == 2, s6_Phil1 == 1)) && if(e4_Phil2, 4, 3) == 3) ->
+         __get(3, if(e4_Phil2, 4, 3)) .
+         P(s5_Fork1 = 2, m_Fork4 = 3, s6_Phil1 = if(e4_Phil2, 3, 2))
+     + (s8_Phil1 == 3) ->
+         eat(4) .
+         P(s8_Phil1 = 4)
+     + sum e7_Phil2: Bool.
+         ((s7_Fork1 == 2 && if(e7_Phil2, s8_Phil1 == 5, s8_Phil1 == 4)) && 4 == m_Fork6 && if(e7_Phil2, 5, 4) == 4) ->
+         __put(4, if(e7_Phil2, 5, 4)) .
+         P(s7_Fork1 = 1, m_Fork6 = dc7, s8_Phil1 = if(e7_Phil2, 1, 5))
+     + sum e6_Phil2: Bool.
+         ((s7_Fork1 == 1 && if(e6_Phil2, s8_Phil1 == 2, s8_Phil1 == 1)) && if(e6_Phil2, 5, 4) == 4) ->
+         __get(4, if(e6_Phil2, 5, 4)) .
+         P(s7_Fork1 = 2, m_Fork6 = 4, s8_Phil1 = if(e6_Phil2, 3, 2))
+     + (s10_Phil1 == 3) ->
+         eat(5) .
+         P(s10_Phil1 = 4)
+     + sum e9_Phil2: Bool.
+         ((s9_Fork1 == 2 && if(e9_Phil2, s10_Phil1 == 5, s10_Phil1 == 4)) && 5 == m_Fork8 && if(e9_Phil2, 6, 5) == 5) ->
+         __put(5, if(e9_Phil2, 6, 5)) .
+         P(s9_Fork1 = 1, m_Fork8 = dc9, s10_Phil1 = if(e9_Phil2, 1, 5))
+     + sum e8_Phil2: Bool.
+         ((s9_Fork1 == 1 && if(e8_Phil2, s10_Phil1 == 2, s10_Phil1 == 1)) && if(e8_Phil2, 6, 5) == 5) ->
+         __get(5, if(e8_Phil2, 6, 5)) .
+         P(s9_Fork1 = 2, m_Fork8 = 5, s10_Phil1 = if(e8_Phil2, 3, 2))
+     + (s12_Phil1 == 3) ->
+         eat(6) .
+         P(s12_Phil1 = 4)
+     + sum e11_Phil2: Bool.
+         ((s11_Fork1 == 2 && if(e11_Phil2, s12_Phil1 == 5, s12_Phil1 == 4)) && 6 == m_Fork10 && if(e11_Phil2, 7, 6) == 6) ->
+         __put(6, if(e11_Phil2, 7, 6)) .
+         P(s11_Fork1 = 1, m_Fork10 = dc11, s12_Phil1 = if(e11_Phil2, 1, 5))
+     + sum e10_Phil2: Bool.
+         ((s11_Fork1 == 1 && if(e10_Phil2, s12_Phil1 == 2, s12_Phil1 == 1)) && if(e10_Phil2, 7, 6) == 6) ->
+         __get(6, if(e10_Phil2, 7, 6)) .
+         P(s11_Fork1 = 2, m_Fork10 = 6, s12_Phil1 = if(e10_Phil2, 3, 2))
+     + (s14_Phil1 == 3) ->
+         eat(7) .
+         P(s14_Phil1 = 4)
+     + sum e13_Phil2: Bool.
+         ((s13_Fork1 == 2 && if(e13_Phil2, s14_Phil1 == 5, s14_Phil1 == 4)) && 7 == m_Fork12 && if(e13_Phil2, 8, 7) == 7) ->
+         __put(7, if(e13_Phil2, 8, 7)) .
+         P(s13_Fork1 = 1, m_Fork12 = dc13, s14_Phil1 = if(e13_Phil2, 1, 5))
+     + sum e12_Phil2: Bool.
+         ((s13_Fork1 == 1 && if(e12_Phil2, s14_Phil1 == 2, s14_Phil1 == 1)) && if(e12_Phil2, 8, 7) == 7) ->
+         __get(7, if(e12_Phil2, 8, 7)) .
+         P(s13_Fork1 = 2, m_Fork12 = 7, s14_Phil1 = if(e12_Phil2, 3, 2))
+     + (s16_Phil1 == 3) ->
+         eat(8) .
+         P(s16_Phil1 = 4)
+     + sum e15_Phil2: Bool.
+         ((s15_Fork1 == 2 && if(e15_Phil2, s16_Phil1 == 5, s16_Phil1 == 4)) && 8 == m_Fork14 && if(e15_Phil2, 9, 8) == 8) ->
+         __put(8, if(e15_Phil2, 9, 8)) .
+         P(s15_Fork1 = 1, m_Fork14 = dc15, s16_Phil1 = if(e15_Phil2, 1, 5))
+     + sum e14_Phil2: Bool.
+         ((s15_Fork1 == 1 && if(e14_Phil2, s16_Phil1 == 2, s16_Phil1 == 1)) && if(e14_Phil2, 9, 8) == 8) ->
+         __get(8, if(e14_Phil2, 9, 8)) .
+         P(s15_Fork1 = 2, m_Fork14 = 8, s16_Phil1 = if(e14_Phil2, 3, 2))
+     + (s18_Phil1 == 3) ->
+         eat(9) .
+         P(s18_Phil1 = 4)
+     + sum e17_Phil2: Bool.
+         ((s17_Fork1 == 2 && if(e17_Phil2, s18_Phil1 == 5, s18_Phil1 == 4)) && 9 == m_Fork16 && if(e17_Phil2, 10, 9) == 9) ->
+         __put(9, if(e17_Phil2, 10, 9)) .
+         P(s17_Fork1 = 1, m_Fork16 = dc17, s18_Phil1 = if(e17_Phil2, 1, 5))
+     + sum e16_Phil2: Bool.
+         ((s17_Fork1 == 1 && if(e16_Phil2, s18_Phil1 == 2, s18_Phil1 == 1)) && if(e16_Phil2, 10, 9) == 9) ->
+         __get(9, if(e16_Phil2, 10, 9)) .
+         P(s17_Fork1 = 2, m_Fork16 = 9, s18_Phil1 = if(e16_Phil2, 3, 2))
+     + (s20_Phil1 == 3) ->
+         eat(10) .
+         P(s20_Phil1 = 4)
+     + sum e19_Phil2: Bool.
+         ((s19_Fork1 == 2 && if(e19_Phil2, s20_Phil1 == 5, s20_Phil1 == 4)) && 10 == m_Fork18 && if(e19_Phil2, 1, 10) == 10) ->
+         __put(10, if(e19_Phil2, 1, 10)) .
+         P(s19_Fork1 = 1, m_Fork18 = dc19, s20_Phil1 = if(e19_Phil2, 1, 5))
+     + sum e18_Phil2: Bool.
+         ((s19_Fork1 == 1 && if(e18_Phil2, s20_Phil1 == 2, s20_Phil1 == 1)) && if(e18_Phil2, 1, 10) == 10) ->
+         __get(10, if(e18_Phil2, 1, 10)) .
+         P(s19_Fork1 = 2, m_Fork18 = 10, s20_Phil1 = if(e18_Phil2, 3, 2))
+     + sum e19_Phil1: Bool.
+         ((s17_Fork1 == 2 && if(e19_Phil1, s20_Phil1 == 5, s20_Phil1 == 4)) && 10 == m_Fork16 && if(e19_Phil1, 1, 10) == 9) ->
+         __put(10, if(e19_Phil1, 1, 10)) .
+         P(s17_Fork1 = 1, m_Fork16 = dc17, s20_Phil1 = if(e19_Phil1, 1, 5))
+     + sum e18_Phil1: Bool.
+         ((s17_Fork1 == 1 && if(e18_Phil1, s20_Phil1 == 2, s20_Phil1 == 1)) && if(e18_Phil1, 1, 10) == 9) ->
+         __get(10, if(e18_Phil1, 1, 10)) .
+         P(s17_Fork1 = 2, m_Fork16 = 10, s20_Phil1 = if(e18_Phil1, 3, 2))
+     + sum e16_Phil1: Bool.
+         ((if(e16_Phil1, s18_Phil1 == 2, s18_Phil1 == 1) && s19_Fork1 == 1) && if(e16_Phil1, 10, 9) == 10) ->
+         __get(9, if(e16_Phil1, 10, 9)) .
+         P(s18_Phil1 = if(e16_Phil1, 3, 2), s19_Fork1 = 2, m_Fork18 = 9)
+     + sum e17_Phil1: Bool.
+         ((if(e17_Phil1, s18_Phil1 == 5, s18_Phil1 == 4) && s19_Fork1 == 2) && 9 == m_Fork18 && if(e17_Phil1, 10, 9) == 10) ->
+         __put(9, if(e17_Phil1, 10, 9)) .
+         P(s18_Phil1 = if(e17_Phil1, 1, 5), s19_Fork1 = 1, m_Fork18 = dc19)
+     + sum e17_Phil1: Bool.
+         ((s15_Fork1 == 2 && if(e17_Phil1, s18_Phil1 == 5, s18_Phil1 == 4)) && 9 == m_Fork14 && if(e17_Phil1, 10, 9) == 8) ->
+         __put(9, if(e17_Phil1, 10, 9)) .
+         P(s15_Fork1 = 1, m_Fork14 = dc15, s18_Phil1 = if(e17_Phil1, 1, 5))
+     + sum e19_Phil1: Bool.
+         ((s15_Fork1 == 2 && if(e19_Phil1, s20_Phil1 == 5, s20_Phil1 == 4)) && 10 == m_Fork14 && if(e19_Phil1, 1, 10) == 8) ->
+         __put(10, if(e19_Phil1, 1, 10)) .
+         P(s15_Fork1 = 1, m_Fork14 = dc15, s20_Phil1 = if(e19_Phil1, 1, 5))
+     + sum e16_Phil1: Bool.
+         ((s15_Fork1 == 1 && if(e16_Phil1, s18_Phil1 == 2, s18_Phil1 == 1)) && if(e16_Phil1, 10, 9) == 8) ->
+         __get(9, if(e16_Phil1, 10, 9)) .
+         P(s15_Fork1 = 2, m_Fork14 = 9, s18_Phil1 = if(e16_Phil1, 3, 2))
+     + sum e18_Phil1: Bool.
+         ((s15_Fork1 == 1 && if(e18_Phil1, s20_Phil1 == 2, s20_Phil1 == 1)) && if(e18_Phil1, 1, 10) == 8) ->
+         __get(10, if(e18_Phil1, 1, 10)) .
+         P(s15_Fork1 = 2, m_Fork14 = 10, s20_Phil1 = if(e18_Phil1, 3, 2))
+     + sum e14_Phil1: Bool.
+         ((if(e14_Phil1, s16_Phil1 == 2, s16_Phil1 == 1) && s17_Fork1 == 1) && if(e14_Phil1, 9, 8) == 9) ->
+         __get(8, if(e14_Phil1, 9, 8)) .
+         P(s16_Phil1 = if(e14_Phil1, 3, 2), s17_Fork1 = 2, m_Fork16 = 8)
+     + sum e14_Phil1: Bool.
+         ((if(e14_Phil1, s16_Phil1 == 2, s16_Phil1 == 1) && s19_Fork1 == 1) && if(e14_Phil1, 9, 8) == 10) ->
+         __get(8, if(e14_Phil1, 9, 8)) .
+         P(s16_Phil1 = if(e14_Phil1, 3, 2), s19_Fork1 = 2, m_Fork18 = 8)
+     + sum e15_Phil1: Bool.
+         ((if(e15_Phil1, s16_Phil1 == 5, s16_Phil1 == 4) && s17_Fork1 == 2) && 8 == m_Fork16 && if(e15_Phil1, 9, 8) == 9) ->
+         __put(8, if(e15_Phil1, 9, 8)) .
+         P(s16_Phil1 = if(e15_Phil1, 1, 5), s17_Fork1 = 1, m_Fork16 = dc17)
+     + sum e15_Phil1: Bool.
+         ((if(e15_Phil1, s16_Phil1 == 5, s16_Phil1 == 4) && s19_Fork1 == 2) && 8 == m_Fork18 && if(e15_Phil1, 9, 8) == 10) ->
+         __put(8, if(e15_Phil1, 9, 8)) .
+         P(s16_Phil1 = if(e15_Phil1, 1, 5), s19_Fork1 = 1, m_Fork18 = dc19)
+     + sum e15_Phil1: Bool.
+         ((s13_Fork1 == 2 && if(e15_Phil1, s16_Phil1 == 5, s16_Phil1 == 4)) && 8 == m_Fork12 && if(e15_Phil1, 9, 8) == 7) ->
+         __put(8, if(e15_Phil1, 9, 8)) .
+         P(s13_Fork1 = 1, m_Fork12 = dc13, s16_Phil1 = if(e15_Phil1, 1, 5))
+     + sum e17_Phil1: Bool.
+         ((s13_Fork1 == 2 && if(e17_Phil1, s18_Phil1 == 5, s18_Phil1 == 4)) && 9 == m_Fork12 && if(e17_Phil1, 10, 9) == 7) ->
+         __put(9, if(e17_Phil1, 10, 9)) .
+         P(s13_Fork1 = 1, m_Fork12 = dc13, s18_Phil1 = if(e17_Phil1, 1, 5))
+     + sum e19_Phil1: Bool.
+         ((s13_Fork1 == 2 && if(e19_Phil1, s20_Phil1 == 5, s20_Phil1 == 4)) && 10 == m_Fork12 && if(e19_Phil1, 1, 10) == 7) ->
+         __put(10, if(e19_Phil1, 1, 10)) .
+         P(s13_Fork1 = 1, m_Fork12 = dc13, s20_Phil1 = if(e19_Phil1, 1, 5))
+     + sum e14_Phil1: Bool.
+         ((s13_Fork1 == 1 && if(e14_Phil1, s16_Phil1 == 2, s16_Phil1 == 1)) && if(e14_Phil1, 9, 8) == 7) ->
+         __get(8, if(e14_Phil1, 9, 8)) .
+         P(s13_Fork1 = 2, m_Fork12 = 8, s16_Phil1 = if(e14_Phil1, 3, 2))
+     + sum e16_Phil1: Bool.
+         ((s13_Fork1 == 1 && if(e16_Phil1, s18_Phil1 == 2, s18_Phil1 == 1)) && if(e16_Phil1, 10, 9) == 7) ->
+         __get(9, if(e16_Phil1, 10, 9)) .
+         P(s13_Fork1 = 2, m_Fork12 = 9, s18_Phil1 = if(e16_Phil1, 3, 2))
+     + sum e18_Phil1: Bool.
+         ((s13_Fork1 == 1 && if(e18_Phil1, s20_Phil1 == 2, s20_Phil1 == 1)) && if(e18_Phil1, 1, 10) == 7) ->
+         __get(10, if(e18_Phil1, 1, 10)) .
+         P(s13_Fork1 = 2, m_Fork12 = 10, s20_Phil1 = if(e18_Phil1, 3, 2))
+     + sum e12_Phil1: Bool.
+         ((if(e12_Phil1, s14_Phil1 == 2, s14_Phil1 == 1) && s15_Fork1 == 1) && if(e12_Phil1, 8, 7) == 8) ->
+         __get(7, if(e12_Phil1, 8, 7)) .
+         P(s14_Phil1 = if(e12_Phil1, 3, 2), s15_Fork1 = 2, m_Fork14 = 7)
+     + sum e12_Phil1: Bool.
+         ((if(e12_Phil1, s14_Phil1 == 2, s14_Phil1 == 1) && s17_Fork1 == 1) && if(e12_Phil1, 8, 7) == 9) ->
+         __get(7, if(e12_Phil1, 8, 7)) .
+         P(s14_Phil1 = if(e12_Phil1, 3, 2), s17_Fork1 = 2, m_Fork16 = 7)
+     + sum e12_Phil1: Bool.
+         ((if(e12_Phil1, s14_Phil1 == 2, s14_Phil1 == 1) && s19_Fork1 == 1) && if(e12_Phil1, 8, 7) == 10) ->
+         __get(7, if(e12_Phil1, 8, 7)) .
+         P(s14_Phil1 = if(e12_Phil1, 3, 2), s19_Fork1 = 2, m_Fork18 = 7)
+     + sum e13_Phil1: Bool.
+         ((if(e13_Phil1, s14_Phil1 == 5, s14_Phil1 == 4) && s15_Fork1 == 2) && 7 == m_Fork14 && if(e13_Phil1, 8, 7) == 8) ->
+         __put(7, if(e13_Phil1, 8, 7)) .
+         P(s14_Phil1 = if(e13_Phil1, 1, 5), s15_Fork1 = 1, m_Fork14 = dc15)
+     + sum e13_Phil1: Bool.
+         ((if(e13_Phil1, s14_Phil1 == 5, s14_Phil1 == 4) && s17_Fork1 == 2) && 7 == m_Fork16 && if(e13_Phil1, 8, 7) == 9) ->
+         __put(7, if(e13_Phil1, 8, 7)) .
+         P(s14_Phil1 = if(e13_Phil1, 1, 5), s17_Fork1 = 1, m_Fork16 = dc17)
+     + sum e13_Phil1: Bool.
+         ((if(e13_Phil1, s14_Phil1 == 5, s14_Phil1 == 4) && s19_Fork1 == 2) && 7 == m_Fork18 && if(e13_Phil1, 8, 7) == 10) ->
+         __put(7, if(e13_Phil1, 8, 7)) .
+         P(s14_Phil1 = if(e13_Phil1, 1, 5), s19_Fork1 = 1, m_Fork18 = dc19)
+     + sum e13_Phil1: Bool.
+         ((s11_Fork1 == 2 && if(e13_Phil1, s14_Phil1 == 5, s14_Phil1 == 4)) && 7 == m_Fork10 && if(e13_Phil1, 8, 7) == 6) ->
+         __put(7, if(e13_Phil1, 8, 7)) .
+         P(s11_Fork1 = 1, m_Fork10 = dc11, s14_Phil1 = if(e13_Phil1, 1, 5))
+     + sum e15_Phil1: Bool.
+         ((s11_Fork1 == 2 && if(e15_Phil1, s16_Phil1 == 5, s16_Phil1 == 4)) && 8 == m_Fork10 && if(e15_Phil1, 9, 8) == 6) ->
+         __put(8, if(e15_Phil1, 9, 8)) .
+         P(s11_Fork1 = 1, m_Fork10 = dc11, s16_Phil1 = if(e15_Phil1, 1, 5))
+     + sum e17_Phil1: Bool.
+         ((s11_Fork1 == 2 && if(e17_Phil1, s18_Phil1 == 5, s18_Phil1 == 4)) && 9 == m_Fork10 && if(e17_Phil1, 10, 9) == 6) ->
+         __put(9, if(e17_Phil1, 10, 9)) .
+         P(s11_Fork1 = 1, m_Fork10 = dc11, s18_Phil1 = if(e17_Phil1, 1, 5))
+     + sum e19_Phil1: Bool.
+         ((s11_Fork1 == 2 && if(e19_Phil1, s20_Phil1 == 5, s20_Phil1 == 4)) && 10 == m_Fork10 && if(e19_Phil1, 1, 10) == 6) ->
+         __put(10, if(e19_Phil1, 1, 10)) .
+         P(s11_Fork1 = 1, m_Fork10 = dc11, s20_Phil1 = if(e19_Phil1, 1, 5))
+     + sum e12_Phil1: Bool.
+         ((s11_Fork1 == 1 && if(e12_Phil1, s14_Phil1 == 2, s14_Phil1 == 1)) && if(e12_Phil1, 8, 7) == 6) ->
+         __get(7, if(e12_Phil1, 8, 7)) .
+         P(s11_Fork1 = 2, m_Fork10 = 7, s14_Phil1 = if(e12_Phil1, 3, 2))
+     + sum e14_Phil1: Bool.
+         ((s11_Fork1 == 1 && if(e14_Phil1, s16_Phil1 == 2, s16_Phil1 == 1)) && if(e14_Phil1, 9, 8) == 6) ->
+         __get(8, if(e14_Phil1, 9, 8)) .
+         P(s11_Fork1 = 2, m_Fork10 = 8, s16_Phil1 = if(e14_Phil1, 3, 2))
+     + sum e16_Phil1: Bool.
+         ((s11_Fork1 == 1 && if(e16_Phil1, s18_Phil1 == 2, s18_Phil1 == 1)) && if(e16_Phil1, 10, 9) == 6) ->
+         __get(9, if(e16_Phil1, 10, 9)) .
+         P(s11_Fork1 = 2, m_Fork10 = 9, s18_Phil1 = if(e16_Phil1, 3, 2))
+     + sum e18_Phil1: Bool.
+         ((s11_Fork1 == 1 && if(e18_Phil1, s20_Phil1 == 2, s20_Phil1 == 1)) && if(e18_Phil1, 1, 10) == 6) ->
+         __get(10, if(e18_Phil1, 1, 10)) .
+         P(s11_Fork1 = 2, m_Fork10 = 10, s20_Phil1 = if(e18_Phil1, 3, 2))
+     + sum e10_Phil1: Bool.
+         ((if(e10_Phil1, s12_Phil1 == 2, s12_Phil1 == 1) && s13_Fork1 == 1) && if(e10_Phil1, 7, 6) == 7) ->
+         __get(6, if(e10_Phil1, 7, 6)) .
+         P(s12_Phil1 = if(e10_Phil1, 3, 2), s13_Fork1 = 2, m_Fork12 = 6)
+     + sum e10_Phil1: Bool.
+         ((if(e10_Phil1, s12_Phil1 == 2, s12_Phil1 == 1) && s15_Fork1 == 1) && if(e10_Phil1, 7, 6) == 8) ->
+         __get(6, if(e10_Phil1, 7, 6)) .
+         P(s12_Phil1 = if(e10_Phil1, 3, 2), s15_Fork1 = 2, m_Fork14 = 6)
+     + sum e10_Phil1: Bool.
+         ((if(e10_Phil1, s12_Phil1 == 2, s12_Phil1 == 1) && s17_Fork1 == 1) && if(e10_Phil1, 7, 6) == 9) ->
+         __get(6, if(e10_Phil1, 7, 6)) .
+         P(s12_Phil1 = if(e10_Phil1, 3, 2), s17_Fork1 = 2, m_Fork16 = 6)
+     + sum e10_Phil1: Bool.
+         ((if(e10_Phil1, s12_Phil1 == 2, s12_Phil1 == 1) && s19_Fork1 == 1) && if(e10_Phil1, 7, 6) == 10) ->
+         __get(6, if(e10_Phil1, 7, 6)) .
+         P(s12_Phil1 = if(e10_Phil1, 3, 2), s19_Fork1 = 2, m_Fork18 = 6)
+     + sum e11_Phil1: Bool.
+         ((if(e11_Phil1, s12_Phil1 == 5, s12_Phil1 == 4) && s13_Fork1 == 2) && 6 == m_Fork12 && if(e11_Phil1, 7, 6) == 7) ->
+         __put(6, if(e11_Phil1, 7, 6)) .
+         P(s12_Phil1 = if(e11_Phil1, 1, 5), s13_Fork1 = 1, m_Fork12 = dc13)
+     + sum e11_Phil1: Bool.
+         ((if(e11_Phil1, s12_Phil1 == 5, s12_Phil1 == 4) && s15_Fork1 == 2) && 6 == m_Fork14 && if(e11_Phil1, 7, 6) == 8) ->
+         __put(6, if(e11_Phil1, 7, 6)) .
+         P(s12_Phil1 = if(e11_Phil1, 1, 5), s15_Fork1 = 1, m_Fork14 = dc15)
+     + sum e11_Phil1: Bool.
+         ((if(e11_Phil1, s12_Phil1 == 5, s12_Phil1 == 4) && s17_Fork1 == 2) && 6 == m_Fork16 && if(e11_Phil1, 7, 6) == 9) ->
+         __put(6, if(e11_Phil1, 7, 6)) .
+         P(s12_Phil1 = if(e11_Phil1, 1, 5), s17_Fork1 = 1, m_Fork16 = dc17)
+     + sum e11_Phil1: Bool.
+         ((if(e11_Phil1, s12_Phil1 == 5, s12_Phil1 == 4) && s19_Fork1 == 2) && 6 == m_Fork18 && if(e11_Phil1, 7, 6) == 10) ->
+         __put(6, if(e11_Phil1, 7, 6)) .
+         P(s12_Phil1 = if(e11_Phil1, 1, 5), s19_Fork1 = 1, m_Fork18 = dc19)
+     + sum e11_Phil1: Bool.
+         ((s9_Fork1 == 2 && if(e11_Phil1, s12_Phil1 == 5, s12_Phil1 == 4)) && 6 == m_Fork8 && if(e11_Phil1, 7, 6) == 5) ->
+         __put(6, if(e11_Phil1, 7, 6)) .
+         P(s9_Fork1 = 1, m_Fork8 = dc9, s12_Phil1 = if(e11_Phil1, 1, 5))
+     + sum e13_Phil1: Bool.
+         ((s9_Fork1 == 2 && if(e13_Phil1, s14_Phil1 == 5, s14_Phil1 == 4)) && 7 == m_Fork8 && if(e13_Phil1, 8, 7) == 5) ->
+         __put(7, if(e13_Phil1, 8, 7)) .
+         P(s9_Fork1 = 1, m_Fork8 = dc9, s14_Phil1 = if(e13_Phil1, 1, 5))
+     + sum e15_Phil1: Bool.
+         ((s9_Fork1 == 2 && if(e15_Phil1, s16_Phil1 == 5, s16_Phil1 == 4)) && 8 == m_Fork8 && if(e15_Phil1, 9, 8) == 5) ->
+         __put(8, if(e15_Phil1, 9, 8)) .
+         P(s9_Fork1 = 1, m_Fork8 = dc9, s16_Phil1 = if(e15_Phil1, 1, 5))
+     + sum e17_Phil1: Bool.
+         ((s9_Fork1 == 2 && if(e17_Phil1, s18_Phil1 == 5, s18_Phil1 == 4)) && 9 == m_Fork8 && if(e17_Phil1, 10, 9) == 5) ->
+         __put(9, if(e17_Phil1, 10, 9)) .
+         P(s9_Fork1 = 1, m_Fork8 = dc9, s18_Phil1 = if(e17_Phil1, 1, 5))
+     + sum e19_Phil1: Bool.
+         ((s9_Fork1 == 2 && if(e19_Phil1, s20_Phil1 == 5, s20_Phil1 == 4)) && 10 == m_Fork8 && if(e19_Phil1, 1, 10) == 5) ->
+         __put(10, if(e19_Phil1, 1, 10)) .
+         P(s9_Fork1 = 1, m_Fork8 = dc9, s20_Phil1 = if(e19_Phil1, 1, 5))
+     + sum e10_Phil1: Bool.
+         ((s9_Fork1 == 1 && if(e10_Phil1, s12_Phil1 == 2, s12_Phil1 == 1)) && if(e10_Phil1, 7, 6) == 5) ->
+         __get(6, if(e10_Phil1, 7, 6)) .
+         P(s9_Fork1 = 2, m_Fork8 = 6, s12_Phil1 = if(e10_Phil1, 3, 2))
+     + sum e12_Phil1: Bool.
+         ((s9_Fork1 == 1 && if(e12_Phil1, s14_Phil1 == 2, s14_Phil1 == 1)) && if(e12_Phil1, 8, 7) == 5) ->
+         __get(7, if(e12_Phil1, 8, 7)) .
+         P(s9_Fork1 = 2, m_Fork8 = 7, s14_Phil1 = if(e12_Phil1, 3, 2))
+     + sum e14_Phil1: Bool.
+         ((s9_Fork1 == 1 && if(e14_Phil1, s16_Phil1 == 2, s16_Phil1 == 1)) && if(e14_Phil1, 9, 8) == 5) ->
+         __get(8, if(e14_Phil1, 9, 8)) .
+         P(s9_Fork1 = 2, m_Fork8 = 8, s16_Phil1 = if(e14_Phil1, 3, 2))
+     + sum e16_Phil1: Bool.
+         ((s9_Fork1 == 1 && if(e16_Phil1, s18_Phil1 == 2, s18_Phil1 == 1)) && if(e16_Phil1, 10, 9) == 5) ->
+         __get(9, if(e16_Phil1, 10, 9)) .
+         P(s9_Fork1 = 2, m_Fork8 = 9, s18_Phil1 = if(e16_Phil1, 3, 2))
+     + sum e18_Phil1: Bool.
+         ((s9_Fork1 == 1 && if(e18_Phil1, s20_Phil1 == 2, s20_Phil1 == 1)) && if(e18_Phil1, 1, 10) == 5) ->
+         __get(10, if(e18_Phil1, 1, 10)) .
+         P(s9_Fork1 = 2, m_Fork8 = 10, s20_Phil1 = if(e18_Phil1, 3, 2))
+     + sum e8_Phil1: Bool.
+         ((if(e8_Phil1, s10_Phil1 == 2, s10_Phil1 == 1) && s11_Fork1 == 1) && if(e8_Phil1, 6, 5) == 6) ->
+         __get(5, if(e8_Phil1, 6, 5)) .
+         P(s10_Phil1 = if(e8_Phil1, 3, 2), s11_Fork1 = 2, m_Fork10 = 5)
+     + sum e8_Phil1: Bool.
+         ((if(e8_Phil1, s10_Phil1 == 2, s10_Phil1 == 1) && s13_Fork1 == 1) && if(e8_Phil1, 6, 5) == 7) ->
+         __get(5, if(e8_Phil1, 6, 5)) .
+         P(s10_Phil1 = if(e8_Phil1, 3, 2), s13_Fork1 = 2, m_Fork12 = 5)
+     + sum e8_Phil1: Bool.
+         ((if(e8_Phil1, s10_Phil1 == 2, s10_Phil1 == 1) && s15_Fork1 == 1) && if(e8_Phil1, 6, 5) == 8) ->
+         __get(5, if(e8_Phil1, 6, 5)) .
+         P(s10_Phil1 = if(e8_Phil1, 3, 2), s15_Fork1 = 2, m_Fork14 = 5)
+     + sum e8_Phil1: Bool.
+         ((if(e8_Phil1, s10_Phil1 == 2, s10_Phil1 == 1) && s17_Fork1 == 1) && if(e8_Phil1, 6, 5) == 9) ->
+         __get(5, if(e8_Phil1, 6, 5)) .
+         P(s10_Phil1 = if(e8_Phil1, 3, 2), s17_Fork1 = 2, m_Fork16 = 5)
+     + sum e8_Phil1: Bool.
+         ((if(e8_Phil1, s10_Phil1 == 2, s10_Phil1 == 1) && s19_Fork1 == 1) && if(e8_Phil1, 6, 5) == 10) ->
+         __get(5, if(e8_Phil1, 6, 5)) .
+         P(s10_Phil1 = if(e8_Phil1, 3, 2), s19_Fork1 = 2, m_Fork18 = 5)
+     + sum e9_Phil1: Bool.
+         ((if(e9_Phil1, s10_Phil1 == 5, s10_Phil1 == 4) && s11_Fork1 == 2) && 5 == m_Fork10 && if(e9_Phil1, 6, 5) == 6) ->
+         __put(5, if(e9_Phil1, 6, 5)) .
+         P(s10_Phil1 = if(e9_Phil1, 1, 5), s11_Fork1 = 1, m_Fork10 = dc11)
+     + sum e9_Phil1: Bool.
+         ((if(e9_Phil1, s10_Phil1 == 5, s10_Phil1 == 4) && s13_Fork1 == 2) && 5 == m_Fork12 && if(e9_Phil1, 6, 5) == 7) ->
+         __put(5, if(e9_Phil1, 6, 5)) .
+         P(s10_Phil1 = if(e9_Phil1, 1, 5), s13_Fork1 = 1, m_Fork12 = dc13)
+     + sum e9_Phil1: Bool.
+         ((if(e9_Phil1, s10_Phil1 == 5, s10_Phil1 == 4) && s15_Fork1 == 2) && 5 == m_Fork14 && if(e9_Phil1, 6, 5) == 8) ->
+         __put(5, if(e9_Phil1, 6, 5)) .
+         P(s10_Phil1 = if(e9_Phil1, 1, 5), s15_Fork1 = 1, m_Fork14 = dc15)
+     + sum e9_Phil1: Bool.
+         ((if(e9_Phil1, s10_Phil1 == 5, s10_Phil1 == 4) && s17_Fork1 == 2) && 5 == m_Fork16 && if(e9_Phil1, 6, 5) == 9) ->
+         __put(5, if(e9_Phil1, 6, 5)) .
+         P(s10_Phil1 = if(e9_Phil1, 1, 5), s17_Fork1 = 1, m_Fork16 = dc17)
+     + sum e9_Phil1: Bool.
+         ((if(e9_Phil1, s10_Phil1 == 5, s10_Phil1 == 4) && s19_Fork1 == 2) && 5 == m_Fork18 && if(e9_Phil1, 6, 5) == 10) ->
+         __put(5, if(e9_Phil1, 6, 5)) .
+         P(s10_Phil1 = if(e9_Phil1, 1, 5), s19_Fork1 = 1, m_Fork18 = dc19)
+     + sum e9_Phil1: Bool.
+         ((s7_Fork1 == 2 && if(e9_Phil1, s10_Phil1 == 5, s10_Phil1 == 4)) && 5 == m_Fork6 && if(e9_Phil1, 6, 5) == 4) ->
+         __put(5, if(e9_Phil1, 6, 5)) .
+         P(s7_Fork1 = 1, m_Fork6 = dc7, s10_Phil1 = if(e9_Phil1, 1, 5))
+     + sum e11_Phil1: Bool.
+         ((s7_Fork1 == 2 && if(e11_Phil1, s12_Phil1 == 5, s12_Phil1 == 4)) && 6 == m_Fork6 && if(e11_Phil1, 7, 6) == 4) ->
+         __put(6, if(e11_Phil1, 7, 6)) .
+         P(s7_Fork1 = 1, m_Fork6 = dc7, s12_Phil1 = if(e11_Phil1, 1, 5))
+     + sum e13_Phil1: Bool.
+         ((s7_Fork1 == 2 && if(e13_Phil1, s14_Phil1 == 5, s14_Phil1 == 4)) && 7 == m_Fork6 && if(e13_Phil1, 8, 7) == 4) ->
+         __put(7, if(e13_Phil1, 8, 7)) .
+         P(s7_Fork1 = 1, m_Fork6 = dc7, s14_Phil1 = if(e13_Phil1, 1, 5))
+     + sum e15_Phil1: Bool.
+         ((s7_Fork1 == 2 && if(e15_Phil1, s16_Phil1 == 5, s16_Phil1 == 4)) && 8 == m_Fork6 && if(e15_Phil1, 9, 8) == 4) ->
+         __put(8, if(e15_Phil1, 9, 8)) .
+         P(s7_Fork1 = 1, m_Fork6 = dc7, s16_Phil1 = if(e15_Phil1, 1, 5))
+     + sum e17_Phil1: Bool.
+         ((s7_Fork1 == 2 && if(e17_Phil1, s18_Phil1 == 5, s18_Phil1 == 4)) && 9 == m_Fork6 && if(e17_Phil1, 10, 9) == 4) ->
+         __put(9, if(e17_Phil1, 10, 9)) .
+         P(s7_Fork1 = 1, m_Fork6 = dc7, s18_Phil1 = if(e17_Phil1, 1, 5))
+     + sum e19_Phil1: Bool.
+         ((s7_Fork1 == 2 && if(e19_Phil1, s20_Phil1 == 5, s20_Phil1 == 4)) && 10 == m_Fork6 && if(e19_Phil1, 1, 10) == 4) ->
+         __put(10, if(e19_Phil1, 1, 10)) .
+         P(s7_Fork1 = 1, m_Fork6 = dc7, s20_Phil1 = if(e19_Phil1, 1, 5))
+     + sum e8_Phil1: Bool.
+         ((s7_Fork1 == 1 && if(e8_Phil1, s10_Phil1 == 2, s10_Phil1 == 1)) && if(e8_Phil1, 6, 5) == 4) ->
+         __get(5, if(e8_Phil1, 6, 5)) .
+         P(s7_Fork1 = 2, m_Fork6 = 5, s10_Phil1 = if(e8_Phil1, 3, 2))
+     + sum e10_Phil1: Bool.
+         ((s7_Fork1 == 1 && if(e10_Phil1, s12_Phil1 == 2, s12_Phil1 == 1)) && if(e10_Phil1, 7, 6) == 4) ->
+         __get(6, if(e10_Phil1, 7, 6)) .
+         P(s7_Fork1 = 2, m_Fork6 = 6, s12_Phil1 = if(e10_Phil1, 3, 2))
+     + sum e12_Phil1: Bool.
+         ((s7_Fork1 == 1 && if(e12_Phil1, s14_Phil1 == 2, s14_Phil1 == 1)) && if(e12_Phil1, 8, 7) == 4) ->
+         __get(7, if(e12_Phil1, 8, 7)) .
+         P(s7_Fork1 = 2, m_Fork6 = 7, s14_Phil1 = if(e12_Phil1, 3, 2))
+     + sum e14_Phil1: Bool.
+         ((s7_Fork1 == 1 && if(e14_Phil1, s16_Phil1 == 2, s16_Phil1 == 1)) && if(e14_Phil1, 9, 8) == 4) ->
+         __get(8, if(e14_Phil1, 9, 8)) .
+         P(s7_Fork1 = 2, m_Fork6 = 8, s16_Phil1 = if(e14_Phil1, 3, 2))
+     + sum e16_Phil1: Bool.
+         ((s7_Fork1 == 1 && if(e16_Phil1, s18_Phil1 == 2, s18_Phil1 == 1)) && if(e16_Phil1, 10, 9) == 4) ->
+         __get(9, if(e16_Phil1, 10, 9)) .
+         P(s7_Fork1 = 2, m_Fork6 = 9, s18_Phil1 = if(e16_Phil1, 3, 2))
+     + sum e18_Phil1: Bool.
+         ((s7_Fork1 == 1 && if(e18_Phil1, s20_Phil1 == 2, s20_Phil1 == 1)) && if(e18_Phil1, 1, 10) == 4) ->
+         __get(10, if(e18_Phil1, 1, 10)) .
+         P(s7_Fork1 = 2, m_Fork6 = 10, s20_Phil1 = if(e18_Phil1, 3, 2))
+     + sum e6_Phil1: Bool.
+         ((if(e6_Phil1, s8_Phil1 == 2, s8_Phil1 == 1) && s9_Fork1 == 1) && if(e6_Phil1, 5, 4) == 5) ->
+         __get(4, if(e6_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e6_Phil1, 3, 2), s9_Fork1 = 2, m_Fork8 = 4)
+     + sum e6_Phil1: Bool.
+         ((if(e6_Phil1, s8_Phil1 == 2, s8_Phil1 == 1) && s11_Fork1 == 1) && if(e6_Phil1, 5, 4) == 6) ->
+         __get(4, if(e6_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e6_Phil1, 3, 2), s11_Fork1 = 2, m_Fork10 = 4)
+     + sum e6_Phil1: Bool.
+         ((if(e6_Phil1, s8_Phil1 == 2, s8_Phil1 == 1) && s13_Fork1 == 1) && if(e6_Phil1, 5, 4) == 7) ->
+         __get(4, if(e6_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e6_Phil1, 3, 2), s13_Fork1 = 2, m_Fork12 = 4)
+     + sum e6_Phil1: Bool.
+         ((if(e6_Phil1, s8_Phil1 == 2, s8_Phil1 == 1) && s15_Fork1 == 1) && if(e6_Phil1, 5, 4) == 8) ->
+         __get(4, if(e6_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e6_Phil1, 3, 2), s15_Fork1 = 2, m_Fork14 = 4)
+     + sum e6_Phil1: Bool.
+         ((if(e6_Phil1, s8_Phil1 == 2, s8_Phil1 == 1) && s17_Fork1 == 1) && if(e6_Phil1, 5, 4) == 9) ->
+         __get(4, if(e6_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e6_Phil1, 3, 2), s17_Fork1 = 2, m_Fork16 = 4)
+     + sum e6_Phil1: Bool.
+         ((if(e6_Phil1, s8_Phil1 == 2, s8_Phil1 == 1) && s19_Fork1 == 1) && if(e6_Phil1, 5, 4) == 10) ->
+         __get(4, if(e6_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e6_Phil1, 3, 2), s19_Fork1 = 2, m_Fork18 = 4)
+     + sum e7_Phil1: Bool.
+         ((if(e7_Phil1, s8_Phil1 == 5, s8_Phil1 == 4) && s9_Fork1 == 2) && 4 == m_Fork8 && if(e7_Phil1, 5, 4) == 5) ->
+         __put(4, if(e7_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e7_Phil1, 1, 5), s9_Fork1 = 1, m_Fork8 = dc9)
+     + sum e7_Phil1: Bool.
+         ((if(e7_Phil1, s8_Phil1 == 5, s8_Phil1 == 4) && s11_Fork1 == 2) && 4 == m_Fork10 && if(e7_Phil1, 5, 4) == 6) ->
+         __put(4, if(e7_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e7_Phil1, 1, 5), s11_Fork1 = 1, m_Fork10 = dc11)
+     + sum e7_Phil1: Bool.
+         ((if(e7_Phil1, s8_Phil1 == 5, s8_Phil1 == 4) && s13_Fork1 == 2) && 4 == m_Fork12 && if(e7_Phil1, 5, 4) == 7) ->
+         __put(4, if(e7_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e7_Phil1, 1, 5), s13_Fork1 = 1, m_Fork12 = dc13)
+     + sum e7_Phil1: Bool.
+         ((if(e7_Phil1, s8_Phil1 == 5, s8_Phil1 == 4) && s15_Fork1 == 2) && 4 == m_Fork14 && if(e7_Phil1, 5, 4) == 8) ->
+         __put(4, if(e7_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e7_Phil1, 1, 5), s15_Fork1 = 1, m_Fork14 = dc15)
+     + sum e7_Phil1: Bool.
+         ((if(e7_Phil1, s8_Phil1 == 5, s8_Phil1 == 4) && s17_Fork1 == 2) && 4 == m_Fork16 && if(e7_Phil1, 5, 4) == 9) ->
+         __put(4, if(e7_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e7_Phil1, 1, 5), s17_Fork1 = 1, m_Fork16 = dc17)
+     + sum e7_Phil1: Bool.
+         ((if(e7_Phil1, s8_Phil1 == 5, s8_Phil1 == 4) && s19_Fork1 == 2) && 4 == m_Fork18 && if(e7_Phil1, 5, 4) == 10) ->
+         __put(4, if(e7_Phil1, 5, 4)) .
+         P(s8_Phil1 = if(e7_Phil1, 1, 5), s19_Fork1 = 1, m_Fork18 = dc19)
+     + sum e7_Phil1: Bool.
+         ((s5_Fork1 == 2 && if(e7_Phil1, s8_Phil1 == 5, s8_Phil1 == 4)) && 4 == m_Fork4 && if(e7_Phil1, 5, 4) == 3) ->
+         __put(4, if(e7_Phil1, 5, 4)) .
+         P(s5_Fork1 = 1, m_Fork4 = dc5, s8_Phil1 = if(e7_Phil1, 1, 5))
+     + sum e9_Phil1: Bool.
+         ((s5_Fork1 == 2 && if(e9_Phil1, s10_Phil1 == 5, s10_Phil1 == 4)) && 5 == m_Fork4 && if(e9_Phil1, 6, 5) == 3) ->
+         __put(5, if(e9_Phil1, 6, 5)) .
+         P(s5_Fork1 = 1, m_Fork4 = dc5, s10_Phil1 = if(e9_Phil1, 1, 5))
+     + sum e11_Phil1: Bool.
+         ((s5_Fork1 == 2 && if(e11_Phil1, s12_Phil1 == 5, s12_Phil1 == 4)) && 6 == m_Fork4 && if(e11_Phil1, 7, 6) == 3) ->
+         __put(6, if(e11_Phil1, 7, 6)) .
+         P(s5_Fork1 = 1, m_Fork4 = dc5, s12_Phil1 = if(e11_Phil1, 1, 5))
+     + sum e13_Phil1: Bool.
+         ((s5_Fork1 == 2 && if(e13_Phil1, s14_Phil1 == 5, s14_Phil1 == 4)) && 7 == m_Fork4 && if(e13_Phil1, 8, 7) == 3) ->
+         __put(7, if(e13_Phil1, 8, 7)) .
+         P(s5_Fork1 = 1, m_Fork4 = dc5, s14_Phil1 = if(e13_Phil1, 1, 5))
+     + sum e15_Phil1: Bool.
+         ((s5_Fork1 == 2 && if(e15_Phil1, s16_Phil1 == 5, s16_Phil1 == 4)) && 8 == m_Fork4 && if(e15_Phil1, 9, 8) == 3) ->
+         __put(8, if(e15_Phil1, 9, 8)) .
+         P(s5_Fork1 = 1, m_Fork4 = dc5, s16_Phil1 = if(e15_Phil1, 1, 5))
+     + sum e17_Phil1: Bool.
+         ((s5_Fork1 == 2 && if(e17_Phil1, s18_Phil1 == 5, s18_Phil1 == 4)) && 9 == m_Fork4 && if(e17_Phil1, 10, 9) == 3) ->
+         __put(9, if(e17_Phil1, 10, 9)) .
+         P(s5_Fork1 = 1, m_Fork4 = dc5, s18_Phil1 = if(e17_Phil1, 1, 5))
+     + sum e19_Phil1: Bool.
+         ((s5_Fork1 == 2 && if(e19_Phil1, s20_Phil1 == 5, s20_Phil1 == 4)) && 10 == m_Fork4 && if(e19_Phil1, 1, 10) == 3) ->
+         __put(10, if(e19_Phil1, 1, 10)) .
+         P(s5_Fork1 = 1, m_Fork4 = dc5, s20_Phil1 = if(e19_Phil1, 1, 5))
+     + sum e6_Phil1: Bool.
+         ((s5_Fork1 == 1 && if(e6_Phil1, s8_Phil1 == 2, s8_Phil1 == 1)) && if(e6_Phil1, 5, 4) == 3) ->
+         __get(4, if(e6_Phil1, 5, 4)) .
+         P(s5_Fork1 = 2, m_Fork4 = 4, s8_Phil1 = if(e6_Phil1, 3, 2))
+     + sum e8_Phil1: Bool.
+         ((s5_Fork1 == 1 && if(e8_Phil1, s10_Phil1 == 2, s10_Phil1 == 1)) && if(e8_Phil1, 6, 5) == 3) ->
+         __get(5, if(e8_Phil1, 6, 5)) .
+         P(s5_Fork1 = 2, m_Fork4 = 5, s10_Phil1 = if(e8_Phil1, 3, 2))
+     + sum e10_Phil1: Bool.
+         ((s5_Fork1 == 1 && if(e10_Phil1, s12_Phil1 == 2, s12_Phil1 == 1)) && if(e10_Phil1, 7, 6) == 3) ->
+         __get(6, if(e10_Phil1, 7, 6)) .
+         P(s5_Fork1 = 2, m_Fork4 = 6, s12_Phil1 = if(e10_Phil1, 3, 2))
+     + sum e12_Phil1: Bool.
+         ((s5_Fork1 == 1 && if(e12_Phil1, s14_Phil1 == 2, s14_Phil1 == 1)) && if(e12_Phil1, 8, 7) == 3) ->
+         __get(7, if(e12_Phil1, 8, 7)) .
+         P(s5_Fork1 = 2, m_Fork4 = 7, s14_Phil1 = if(e12_Phil1, 3, 2))
+     + sum e14_Phil1: Bool.
+         ((s5_Fork1 == 1 && if(e14_Phil1, s16_Phil1 == 2, s16_Phil1 == 1)) && if(e14_Phil1, 9, 8) == 3) ->
+         __get(8, if(e14_Phil1, 9, 8)) .
+         P(s5_Fork1 = 2, m_Fork4 = 8, s16_Phil1 = if(e14_Phil1, 3, 2))
+     + sum e16_Phil1: Bool.
+         ((s5_Fork1 == 1 && if(e16_Phil1, s18_Phil1 == 2, s18_Phil1 == 1)) && if(e16_Phil1, 10, 9) == 3) ->
+         __get(9, if(e16_Phil1, 10, 9)) .
+         P(s5_Fork1 = 2, m_Fork4 = 9, s18_Phil1 = if(e16_Phil1, 3, 2))
+     + sum e18_Phil1: Bool.
+         ((s5_Fork1 == 1 && if(e18_Phil1, s20_Phil1 == 2, s20_Phil1 == 1)) && if(e18_Phil1, 1, 10) == 3) ->
+         __get(10, if(e18_Phil1, 1, 10)) .
+         P(s5_Fork1 = 2, m_Fork4 = 10, s20_Phil1 = if(e18_Phil1, 3, 2))
+     + sum e4_Phil1: Bool.
+         ((if(e4_Phil1, s6_Phil1 == 2, s6_Phil1 == 1) && s7_Fork1 == 1) && if(e4_Phil1, 4, 3) == 4) ->
+         __get(3, if(e4_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e4_Phil1, 3, 2), s7_Fork1 = 2, m_Fork6 = 3)
+     + sum e4_Phil1: Bool.
+         ((if(e4_Phil1, s6_Phil1 == 2, s6_Phil1 == 1) && s9_Fork1 == 1) && if(e4_Phil1, 4, 3) == 5) ->
+         __get(3, if(e4_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e4_Phil1, 3, 2), s9_Fork1 = 2, m_Fork8 = 3)
+     + sum e4_Phil1: Bool.
+         ((if(e4_Phil1, s6_Phil1 == 2, s6_Phil1 == 1) && s11_Fork1 == 1) && if(e4_Phil1, 4, 3) == 6) ->
+         __get(3, if(e4_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e4_Phil1, 3, 2), s11_Fork1 = 2, m_Fork10 = 3)
+     + sum e4_Phil1: Bool.
+         ((if(e4_Phil1, s6_Phil1 == 2, s6_Phil1 == 1) && s13_Fork1 == 1) && if(e4_Phil1, 4, 3) == 7) ->
+         __get(3, if(e4_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e4_Phil1, 3, 2), s13_Fork1 = 2, m_Fork12 = 3)
+     + sum e4_Phil1: Bool.
+         ((if(e4_Phil1, s6_Phil1 == 2, s6_Phil1 == 1) && s15_Fork1 == 1) && if(e4_Phil1, 4, 3) == 8) ->
+         __get(3, if(e4_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e4_Phil1, 3, 2), s15_Fork1 = 2, m_Fork14 = 3)
+     + sum e4_Phil1: Bool.
+         ((if(e4_Phil1, s6_Phil1 == 2, s6_Phil1 == 1) && s17_Fork1 == 1) && if(e4_Phil1, 4, 3) == 9) ->
+         __get(3, if(e4_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e4_Phil1, 3, 2), s17_Fork1 = 2, m_Fork16 = 3)
+     + sum e4_Phil1: Bool.
+         ((if(e4_Phil1, s6_Phil1 == 2, s6_Phil1 == 1) && s19_Fork1 == 1) && if(e4_Phil1, 4, 3) == 10) ->
+         __get(3, if(e4_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e4_Phil1, 3, 2), s19_Fork1 = 2, m_Fork18 = 3)
+     + sum e5_Phil1: Bool.
+         ((if(e5_Phil1, s6_Phil1 == 5, s6_Phil1 == 4) && s7_Fork1 == 2) && 3 == m_Fork6 && if(e5_Phil1, 4, 3) == 4) ->
+         __put(3, if(e5_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e5_Phil1, 1, 5), s7_Fork1 = 1, m_Fork6 = dc7)
+     + sum e5_Phil1: Bool.
+         ((if(e5_Phil1, s6_Phil1 == 5, s6_Phil1 == 4) && s9_Fork1 == 2) && 3 == m_Fork8 && if(e5_Phil1, 4, 3) == 5) ->
+         __put(3, if(e5_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e5_Phil1, 1, 5), s9_Fork1 = 1, m_Fork8 = dc9)
+     + sum e5_Phil1: Bool.
+         ((if(e5_Phil1, s6_Phil1 == 5, s6_Phil1 == 4) && s11_Fork1 == 2) && 3 == m_Fork10 && if(e5_Phil1, 4, 3) == 6) ->
+         __put(3, if(e5_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e5_Phil1, 1, 5), s11_Fork1 = 1, m_Fork10 = dc11)
+     + sum e5_Phil1: Bool.
+         ((if(e5_Phil1, s6_Phil1 == 5, s6_Phil1 == 4) && s13_Fork1 == 2) && 3 == m_Fork12 && if(e5_Phil1, 4, 3) == 7) ->
+         __put(3, if(e5_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e5_Phil1, 1, 5), s13_Fork1 = 1, m_Fork12 = dc13)
+     + sum e5_Phil1: Bool.
+         ((if(e5_Phil1, s6_Phil1 == 5, s6_Phil1 == 4) && s15_Fork1 == 2) && 3 == m_Fork14 && if(e5_Phil1, 4, 3) == 8) ->
+         __put(3, if(e5_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e5_Phil1, 1, 5), s15_Fork1 = 1, m_Fork14 = dc15)
+     + sum e5_Phil1: Bool.
+         ((if(e5_Phil1, s6_Phil1 == 5, s6_Phil1 == 4) && s17_Fork1 == 2) && 3 == m_Fork16 && if(e5_Phil1, 4, 3) == 9) ->
+         __put(3, if(e5_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e5_Phil1, 1, 5), s17_Fork1 = 1, m_Fork16 = dc17)
+     + sum e5_Phil1: Bool.
+         ((if(e5_Phil1, s6_Phil1 == 5, s6_Phil1 == 4) && s19_Fork1 == 2) && 3 == m_Fork18 && if(e5_Phil1, 4, 3) == 10) ->
+         __put(3, if(e5_Phil1, 4, 3)) .
+         P(s6_Phil1 = if(e5_Phil1, 1, 5), s19_Fork1 = 1, m_Fork18 = dc19)
+     + sum e5_Phil1: Bool.
+         ((s3_Fork1 == 2 && if(e5_Phil1, s6_Phil1 == 5, s6_Phil1 == 4)) && 3 == m_Fork2 && if(e5_Phil1, 4, 3) == 2) ->
+         __put(3, if(e5_Phil1, 4, 3)) .
+         P(s3_Fork1 = 1, m_Fork2 = dc3, s6_Phil1 = if(e5_Phil1, 1, 5))
+     + sum e7_Phil1: Bool.
+         ((s3_Fork1 == 2 && if(e7_Phil1, s8_Phil1 == 5, s8_Phil1 == 4)) && 4 == m_Fork2 && if(e7_Phil1, 5, 4) == 2) ->
+         __put(4, if(e7_Phil1, 5, 4)) .
+         P(s3_Fork1 = 1, m_Fork2 = dc3, s8_Phil1 = if(e7_Phil1, 1, 5))
+     + sum e9_Phil1: Bool.
+         ((s3_Fork1 == 2 && if(e9_Phil1, s10_Phil1 == 5, s10_Phil1 == 4)) && 5 == m_Fork2 && if(e9_Phil1, 6, 5) == 2) ->
+         __put(5, if(e9_Phil1, 6, 5)) .
+         P(s3_Fork1 = 1, m_Fork2 = dc3, s10_Phil1 = if(e9_Phil1, 1, 5))
+     + sum e11_Phil1: Bool.
+         ((s3_Fork1 == 2 && if(e11_Phil1, s12_Phil1 == 5, s12_Phil1 == 4)) && 6 == m_Fork2 && if(e11_Phil1, 7, 6) == 2) ->
+         __put(6, if(e11_Phil1, 7, 6)) .
+         P(s3_Fork1 = 1, m_Fork2 = dc3, s12_Phil1 = if(e11_Phil1, 1, 5))
+     + sum e13_Phil1: Bool.
+         ((s3_Fork1 == 2 && if(e13_Phil1, s14_Phil1 == 5, s14_Phil1 == 4)) && 7 == m_Fork2 && if(e13_Phil1, 8, 7) == 2) ->
+         __put(7, if(e13_Phil1, 8, 7)) .
+         P(s3_Fork1 = 1, m_Fork2 = dc3, s14_Phil1 = if(e13_Phil1, 1, 5))
+     + sum e15_Phil1: Bool.
+         ((s3_Fork1 == 2 && if(e15_Phil1, s16_Phil1 == 5, s16_Phil1 == 4)) && 8 == m_Fork2 && if(e15_Phil1, 9, 8) == 2) ->
+         __put(8, if(e15_Phil1, 9, 8)) .
+         P(s3_Fork1 = 1, m_Fork2 = dc3, s16_Phil1 = if(e15_Phil1, 1, 5))
+     + sum e17_Phil1: Bool.
+         ((s3_Fork1 == 2 && if(e17_Phil1, s18_Phil1 == 5, s18_Phil1 == 4)) && 9 == m_Fork2 && if(e17_Phil1, 10, 9) == 2) ->
+         __put(9, if(e17_Phil1, 10, 9)) .
+         P(s3_Fork1 = 1, m_Fork2 = dc3, s18_Phil1 = if(e17_Phil1, 1, 5))
+     + sum e19_Phil1: Bool.
+         ((s3_Fork1 == 2 && if(e19_Phil1, s20_Phil1 == 5, s20_Phil1 == 4)) && 10 == m_Fork2 && if(e19_Phil1, 1, 10) == 2) ->
+         __put(10, if(e19_Phil1, 1, 10)) .
+         P(s3_Fork1 = 1, m_Fork2 = dc3, s20_Phil1 = if(e19_Phil1, 1, 5))
+     + sum e4_Phil1: Bool.
+         ((s3_Fork1 == 1 && if(e4_Phil1, s6_Phil1 == 2, s6_Phil1 == 1)) && if(e4_Phil1, 4, 3) == 2) ->
+         __get(3, if(e4_Phil1, 4, 3)) .
+         P(s3_Fork1 = 2, m_Fork2 = 3, s6_Phil1 = if(e4_Phil1, 3, 2))
+     + sum e6_Phil1: Bool.
+         ((s3_Fork1 == 1 && if(e6_Phil1, s8_Phil1 == 2, s8_Phil1 == 1)) && if(e6_Phil1, 5, 4) == 2) ->
+         __get(4, if(e6_Phil1, 5, 4)) .
+         P(s3_Fork1 = 2, m_Fork2 = 4, s8_Phil1 = if(e6_Phil1, 3, 2))
+     + sum e8_Phil1: Bool.
+         ((s3_Fork1 == 1 && if(e8_Phil1, s10_Phil1 == 2, s10_Phil1 == 1)) && if(e8_Phil1, 6, 5) == 2) ->
+         __get(5, if(e8_Phil1, 6, 5)) .
+         P(s3_Fork1 = 2, m_Fork2 = 5, s10_Phil1 = if(e8_Phil1, 3, 2))
+     + sum e10_Phil1: Bool.
+         ((s3_Fork1 == 1 && if(e10_Phil1, s12_Phil1 == 2, s12_Phil1 == 1)) && if(e10_Phil1, 7, 6) == 2) ->
+         __get(6, if(e10_Phil1, 7, 6)) .
+         P(s3_Fork1 = 2, m_Fork2 = 6, s12_Phil1 = if(e10_Phil1, 3, 2))
+     + sum e12_Phil1: Bool.
+         ((s3_Fork1 == 1 && if(e12_Phil1, s14_Phil1 == 2, s14_Phil1 == 1)) && if(e12_Phil1, 8, 7) == 2) ->
+         __get(7, if(e12_Phil1, 8, 7)) .
+         P(s3_Fork1 = 2, m_Fork2 = 7, s14_Phil1 = if(e12_Phil1, 3, 2))
+     + sum e14_Phil1: Bool.
+         ((s3_Fork1 == 1 && if(e14_Phil1, s16_Phil1 == 2, s16_Phil1 == 1)) && if(e14_Phil1, 9, 8) == 2) ->
+         __get(8, if(e14_Phil1, 9, 8)) .
+         P(s3_Fork1 = 2, m_Fork2 = 8, s16_Phil1 = if(e14_Phil1, 3, 2))
+     + sum e16_Phil1: Bool.
+         ((s3_Fork1 == 1 && if(e16_Phil1, s18_Phil1 == 2, s18_Phil1 == 1)) && if(e16_Phil1, 10, 9) == 2) ->
+         __get(9, if(e16_Phil1, 10, 9)) .
+         P(s3_Fork1 = 2, m_Fork2 = 9, s18_Phil1 = if(e16_Phil1, 3, 2))
+     + sum e18_Phil1: Bool.
+         ((s3_Fork1 == 1 && if(e18_Phil1, s20_Phil1 == 2, s20_Phil1 == 1)) && if(e18_Phil1, 1, 10) == 2) ->
+         __get(10, if(e18_Phil1, 1, 10)) .
+         P(s3_Fork1 = 2, m_Fork2 = 10, s20_Phil1 = if(e18_Phil1, 3, 2))
+     + sum e2_Phil1: Bool.
+         ((if(e2_Phil1, s4_Phil1 == 2, s4_Phil1 == 1) && s5_Fork1 == 1) && if(e2_Phil1, 3, 2) == 3) ->
+         __get(2, if(e2_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e2_Phil1, 3, 2), s5_Fork1 = 2, m_Fork4 = 2)
+     + sum e2_Phil1: Bool.
+         ((if(e2_Phil1, s4_Phil1 == 2, s4_Phil1 == 1) && s7_Fork1 == 1) && if(e2_Phil1, 3, 2) == 4) ->
+         __get(2, if(e2_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e2_Phil1, 3, 2), s7_Fork1 = 2, m_Fork6 = 2)
+     + sum e2_Phil1: Bool.
+         ((if(e2_Phil1, s4_Phil1 == 2, s4_Phil1 == 1) && s9_Fork1 == 1) && if(e2_Phil1, 3, 2) == 5) ->
+         __get(2, if(e2_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e2_Phil1, 3, 2), s9_Fork1 = 2, m_Fork8 = 2)
+     + sum e2_Phil1: Bool.
+         ((if(e2_Phil1, s4_Phil1 == 2, s4_Phil1 == 1) && s11_Fork1 == 1) && if(e2_Phil1, 3, 2) == 6) ->
+         __get(2, if(e2_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e2_Phil1, 3, 2), s11_Fork1 = 2, m_Fork10 = 2)
+     + sum e2_Phil1: Bool.
+         ((if(e2_Phil1, s4_Phil1 == 2, s4_Phil1 == 1) && s13_Fork1 == 1) && if(e2_Phil1, 3, 2) == 7) ->
+         __get(2, if(e2_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e2_Phil1, 3, 2), s13_Fork1 = 2, m_Fork12 = 2)
+     + sum e2_Phil1: Bool.
+         ((if(e2_Phil1, s4_Phil1 == 2, s4_Phil1 == 1) && s15_Fork1 == 1) && if(e2_Phil1, 3, 2) == 8) ->
+         __get(2, if(e2_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e2_Phil1, 3, 2), s15_Fork1 = 2, m_Fork14 = 2)
+     + sum e2_Phil1: Bool.
+         ((if(e2_Phil1, s4_Phil1 == 2, s4_Phil1 == 1) && s17_Fork1 == 1) && if(e2_Phil1, 3, 2) == 9) ->
+         __get(2, if(e2_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e2_Phil1, 3, 2), s17_Fork1 = 2, m_Fork16 = 2)
+     + sum e2_Phil1: Bool.
+         ((if(e2_Phil1, s4_Phil1 == 2, s4_Phil1 == 1) && s19_Fork1 == 1) && if(e2_Phil1, 3, 2) == 10) ->
+         __get(2, if(e2_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e2_Phil1, 3, 2), s19_Fork1 = 2, m_Fork18 = 2)
+     + sum e3_Phil1: Bool.
+         ((if(e3_Phil1, s4_Phil1 == 5, s4_Phil1 == 4) && s5_Fork1 == 2) && 2 == m_Fork4 && if(e3_Phil1, 3, 2) == 3) ->
+         __put(2, if(e3_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e3_Phil1, 1, 5), s5_Fork1 = 1, m_Fork4 = dc5)
+     + sum e3_Phil1: Bool.
+         ((if(e3_Phil1, s4_Phil1 == 5, s4_Phil1 == 4) && s7_Fork1 == 2) && 2 == m_Fork6 && if(e3_Phil1, 3, 2) == 4) ->
+         __put(2, if(e3_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e3_Phil1, 1, 5), s7_Fork1 = 1, m_Fork6 = dc7)
+     + sum e3_Phil1: Bool.
+         ((if(e3_Phil1, s4_Phil1 == 5, s4_Phil1 == 4) && s9_Fork1 == 2) && 2 == m_Fork8 && if(e3_Phil1, 3, 2) == 5) ->
+         __put(2, if(e3_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e3_Phil1, 1, 5), s9_Fork1 = 1, m_Fork8 = dc9)
+     + sum e3_Phil1: Bool.
+         ((if(e3_Phil1, s4_Phil1 == 5, s4_Phil1 == 4) && s11_Fork1 == 2) && 2 == m_Fork10 && if(e3_Phil1, 3, 2) == 6) ->
+         __put(2, if(e3_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e3_Phil1, 1, 5), s11_Fork1 = 1, m_Fork10 = dc11)
+     + sum e3_Phil1: Bool.
+         ((if(e3_Phil1, s4_Phil1 == 5, s4_Phil1 == 4) && s13_Fork1 == 2) && 2 == m_Fork12 && if(e3_Phil1, 3, 2) == 7) ->
+         __put(2, if(e3_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e3_Phil1, 1, 5), s13_Fork1 = 1, m_Fork12 = dc13)
+     + sum e3_Phil1: Bool.
+         ((if(e3_Phil1, s4_Phil1 == 5, s4_Phil1 == 4) && s15_Fork1 == 2) && 2 == m_Fork14 && if(e3_Phil1, 3, 2) == 8) ->
+         __put(2, if(e3_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e3_Phil1, 1, 5), s15_Fork1 = 1, m_Fork14 = dc15)
+     + sum e3_Phil1: Bool.
+         ((if(e3_Phil1, s4_Phil1 == 5, s4_Phil1 == 4) && s17_Fork1 == 2) && 2 == m_Fork16 && if(e3_Phil1, 3, 2) == 9) ->
+         __put(2, if(e3_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e3_Phil1, 1, 5), s17_Fork1 = 1, m_Fork16 = dc17)
+     + sum e3_Phil1: Bool.
+         ((if(e3_Phil1, s4_Phil1 == 5, s4_Phil1 == 4) && s19_Fork1 == 2) && 2 == m_Fork18 && if(e3_Phil1, 3, 2) == 10) ->
+         __put(2, if(e3_Phil1, 3, 2)) .
+         P(s4_Phil1 = if(e3_Phil1, 1, 5), s19_Fork1 = 1, m_Fork18 = dc19)
+     + sum e3_Phil1: Bool.
+         ((s1_Fork == 2 && if(e3_Phil1, s4_Phil1 == 5, s4_Phil1 == 4)) && 2 == m_Fork && if(e3_Phil1, 3, 2) == 1) ->
+         __put(2, if(e3_Phil1, 3, 2)) .
+         P(s1_Fork = 1, m_Fork = dc1, s4_Phil1 = if(e3_Phil1, 1, 5))
+     + sum e5_Phil1: Bool.
+         ((s1_Fork == 2 && if(e5_Phil1, s6_Phil1 == 5, s6_Phil1 == 4)) && 3 == m_Fork && if(e5_Phil1, 4, 3) == 1) ->
+         __put(3, if(e5_Phil1, 4, 3)) .
+         P(s1_Fork = 1, m_Fork = dc1, s6_Phil1 = if(e5_Phil1, 1, 5))
+     + sum e7_Phil1: Bool.
+         ((s1_Fork == 2 && if(e7_Phil1, s8_Phil1 == 5, s8_Phil1 == 4)) && 4 == m_Fork && if(e7_Phil1, 5, 4) == 1) ->
+         __put(4, if(e7_Phil1, 5, 4)) .
+         P(s1_Fork = 1, m_Fork = dc1, s8_Phil1 = if(e7_Phil1, 1, 5))
+     + sum e9_Phil1: Bool.
+         ((s1_Fork == 2 && if(e9_Phil1, s10_Phil1 == 5, s10_Phil1 == 4)) && 5 == m_Fork && if(e9_Phil1, 6, 5) == 1) ->
+         __put(5, if(e9_Phil1, 6, 5)) .
+         P(s1_Fork = 1, m_Fork = dc1, s10_Phil1 = if(e9_Phil1, 1, 5))
+     + sum e11_Phil1: Bool.
+         ((s1_Fork == 2 && if(e11_Phil1, s12_Phil1 == 5, s12_Phil1 == 4)) && 6 == m_Fork && if(e11_Phil1, 7, 6) == 1) ->
+         __put(6, if(e11_Phil1, 7, 6)) .
+         P(s1_Fork = 1, m_Fork = dc1, s12_Phil1 = if(e11_Phil1, 1, 5))
+     + sum e13_Phil1: Bool.
+         ((s1_Fork == 2 && if(e13_Phil1, s14_Phil1 == 5, s14_Phil1 == 4)) && 7 == m_Fork && if(e13_Phil1, 8, 7) == 1) ->
+         __put(7, if(e13_Phil1, 8, 7)) .
+         P(s1_Fork = 1, m_Fork = dc1, s14_Phil1 = if(e13_Phil1, 1, 5))
+     + sum e15_Phil1: Bool.
+         ((s1_Fork == 2 && if(e15_Phil1, s16_Phil1 == 5, s16_Phil1 == 4)) && 8 == m_Fork && if(e15_Phil1, 9, 8) == 1) ->
+         __put(8, if(e15_Phil1, 9, 8)) .
+         P(s1_Fork = 1, m_Fork = dc1, s16_Phil1 = if(e15_Phil1, 1, 5))
+     + sum e17_Phil1: Bool.
+         ((s1_Fork == 2 && if(e17_Phil1, s18_Phil1 == 5, s18_Phil1 == 4)) && 9 == m_Fork && if(e17_Phil1, 10, 9) == 1) ->
+         __put(9, if(e17_Phil1, 10, 9)) .
+         P(s1_Fork = 1, m_Fork = dc1, s18_Phil1 = if(e17_Phil1, 1, 5))
+     + sum e19_Phil1: Bool.
+         ((s1_Fork == 2 && if(e19_Phil1, s20_Phil1 == 5, s20_Phil1 == 4)) && 10 == m_Fork && if(e19_Phil1, 1, 10) == 1) ->
+         __put(10, if(e19_Phil1, 1, 10)) .
+         P(s1_Fork = 1, m_Fork = dc1, s20_Phil1 = if(e19_Phil1, 1, 5))
+     + sum e2_Phil1: Bool.
+         ((s1_Fork == 1 && if(e2_Phil1, s4_Phil1 == 2, s4_Phil1 == 1)) && if(e2_Phil1, 3, 2) == 1) ->
+         __get(2, if(e2_Phil1, 3, 2)) .
+         P(s1_Fork = 2, m_Fork = 2, s4_Phil1 = if(e2_Phil1, 3, 2))
+     + sum e4_Phil1: Bool.
+         ((s1_Fork == 1 && if(e4_Phil1, s6_Phil1 == 2, s6_Phil1 == 1)) && if(e4_Phil1, 4, 3) == 1) ->
+         __get(3, if(e4_Phil1, 4, 3)) .
+         P(s1_Fork = 2, m_Fork = 3, s6_Phil1 = if(e4_Phil1, 3, 2))
+     + sum e6_Phil1: Bool.
+         ((s1_Fork == 1 && if(e6_Phil1, s8_Phil1 == 2, s8_Phil1 == 1)) && if(e6_Phil1, 5, 4) == 1) ->
+         __get(4, if(e6_Phil1, 5, 4)) .
+         P(s1_Fork = 2, m_Fork = 4, s8_Phil1 = if(e6_Phil1, 3, 2))
+     + sum e8_Phil1: Bool.
+         ((s1_Fork == 1 && if(e8_Phil1, s10_Phil1 == 2, s10_Phil1 == 1)) && if(e8_Phil1, 6, 5) == 1) ->
+         __get(5, if(e8_Phil1, 6, 5)) .
+         P(s1_Fork = 2, m_Fork = 5, s10_Phil1 = if(e8_Phil1, 3, 2))
+     + sum e10_Phil1: Bool.
+         ((s1_Fork == 1 && if(e10_Phil1, s12_Phil1 == 2, s12_Phil1 == 1)) && if(e10_Phil1, 7, 6) == 1) ->
+         __get(6, if(e10_Phil1, 7, 6)) .
+         P(s1_Fork = 2, m_Fork = 6, s12_Phil1 = if(e10_Phil1, 3, 2))
+     + sum e12_Phil1: Bool.
+         ((s1_Fork == 1 && if(e12_Phil1, s14_Phil1 == 2, s14_Phil1 == 1)) && if(e12_Phil1, 8, 7) == 1) ->
+         __get(7, if(e12_Phil1, 8, 7)) .
+         P(s1_Fork = 2, m_Fork = 7, s14_Phil1 = if(e12_Phil1, 3, 2))
+     + sum e14_Phil1: Bool.
+         ((s1_Fork == 1 && if(e14_Phil1, s16_Phil1 == 2, s16_Phil1 == 1)) && if(e14_Phil1, 9, 8) == 1) ->
+         __get(8, if(e14_Phil1, 9, 8)) .
+         P(s1_Fork = 2, m_Fork = 8, s16_Phil1 = if(e14_Phil1, 3, 2))
+     + sum e16_Phil1: Bool.
+         ((s1_Fork == 1 && if(e16_Phil1, s18_Phil1 == 2, s18_Phil1 == 1)) && if(e16_Phil1, 10, 9) == 1) ->
+         __get(9, if(e16_Phil1, 10, 9)) .
+         P(s1_Fork = 2, m_Fork = 9, s18_Phil1 = if(e16_Phil1, 3, 2))
+     + sum e18_Phil1: Bool.
+         ((s1_Fork == 1 && if(e18_Phil1, s20_Phil1 == 2, s20_Phil1 == 1)) && if(e18_Phil1, 1, 10) == 1) ->
+         __get(10, if(e18_Phil1, 1, 10)) .
+         P(s1_Fork = 2, m_Fork = 10, s20_Phil1 = if(e18_Phil1, 3, 2))
+     + sum e_Phil: Bool.
+         ((if(e_Phil, s2_Phil == 2, s2_Phil == 1) && s3_Fork1 == 1) && if(e_Phil, 2, 1) == 2) ->
+         __get(1, if(e_Phil, 2, 1)) .
+         P(s2_Phil = if(e_Phil, 3, 2), s3_Fork1 = 2, m_Fork2 = 1)
+     + sum e_Phil: Bool.
+         ((if(e_Phil, s2_Phil == 2, s2_Phil == 1) && s5_Fork1 == 1) && if(e_Phil, 2, 1) == 3) ->
+         __get(1, if(e_Phil, 2, 1)) .
+         P(s2_Phil = if(e_Phil, 3, 2), s5_Fork1 = 2, m_Fork4 = 1)
+     + sum e_Phil: Bool.
+         ((if(e_Phil, s2_Phil == 2, s2_Phil == 1) && s7_Fork1 == 1) && if(e_Phil, 2, 1) == 4) ->
+         __get(1, if(e_Phil, 2, 1)) .
+         P(s2_Phil = if(e_Phil, 3, 2), s7_Fork1 = 2, m_Fork6 = 1)
+     + sum e_Phil: Bool.
+         ((if(e_Phil, s2_Phil == 2, s2_Phil == 1) && s9_Fork1 == 1) && if(e_Phil, 2, 1) == 5) ->
+         __get(1, if(e_Phil, 2, 1)) .
+         P(s2_Phil = if(e_Phil, 3, 2), s9_Fork1 = 2, m_Fork8 = 1)
+     + sum e_Phil: Bool.
+         ((if(e_Phil, s2_Phil == 2, s2_Phil == 1) && s11_Fork1 == 1) && if(e_Phil, 2, 1) == 6) ->
+         __get(1, if(e_Phil, 2, 1)) .
+         P(s2_Phil = if(e_Phil, 3, 2), s11_Fork1 = 2, m_Fork10 = 1)
+     + sum e_Phil: Bool.
+         ((if(e_Phil, s2_Phil == 2, s2_Phil == 1) && s13_Fork1 == 1) && if(e_Phil, 2, 1) == 7) ->
+         __get(1, if(e_Phil, 2, 1)) .
+         P(s2_Phil = if(e_Phil, 3, 2), s13_Fork1 = 2, m_Fork12 = 1)
+     + sum e_Phil: Bool.
+         ((if(e_Phil, s2_Phil == 2, s2_Phil == 1) && s15_Fork1 == 1) && if(e_Phil, 2, 1) == 8) ->
+         __get(1, if(e_Phil, 2, 1)) .
+         P(s2_Phil = if(e_Phil, 3, 2), s15_Fork1 = 2, m_Fork14 = 1)
+     + sum e_Phil: Bool.
+         ((if(e_Phil, s2_Phil == 2, s2_Phil == 1) && s17_Fork1 == 1) && if(e_Phil, 2, 1) == 9) ->
+         __get(1, if(e_Phil, 2, 1)) .
+         P(s2_Phil = if(e_Phil, 3, 2), s17_Fork1 = 2, m_Fork16 = 1)
+     + sum e_Phil: Bool.
+         ((if(e_Phil, s2_Phil == 2, s2_Phil == 1) && s19_Fork1 == 1) && if(e_Phil, 2, 1) == 10) ->
+         __get(1, if(e_Phil, 2, 1)) .
+         P(s2_Phil = if(e_Phil, 3, 2), s19_Fork1 = 2, m_Fork18 = 1)
+     + sum e1_Phil: Bool.
+         ((if(e1_Phil, s2_Phil == 5, s2_Phil == 4) && s3_Fork1 == 2) && 1 == m_Fork2 && if(e1_Phil, 2, 1) == 2) ->
+         __put(1, if(e1_Phil, 2, 1)) .
+         P(s2_Phil = if(e1_Phil, 1, 5), s3_Fork1 = 1, m_Fork2 = dc3)
+     + sum e1_Phil: Bool.
+         ((if(e1_Phil, s2_Phil == 5, s2_Phil == 4) && s5_Fork1 == 2) && 1 == m_Fork4 && if(e1_Phil, 2, 1) == 3) ->
+         __put(1, if(e1_Phil, 2, 1)) .
+         P(s2_Phil = if(e1_Phil, 1, 5), s5_Fork1 = 1, m_Fork4 = dc5)
+     + sum e1_Phil: Bool.
+         ((if(e1_Phil, s2_Phil == 5, s2_Phil == 4) && s7_Fork1 == 2) && 1 == m_Fork6 && if(e1_Phil, 2, 1) == 4) ->
+         __put(1, if(e1_Phil, 2, 1)) .
+         P(s2_Phil = if(e1_Phil, 1, 5), s7_Fork1 = 1, m_Fork6 = dc7)
+     + sum e1_Phil: Bool.
+         ((if(e1_Phil, s2_Phil == 5, s2_Phil == 4) && s9_Fork1 == 2) && 1 == m_Fork8 && if(e1_Phil, 2, 1) == 5) ->
+         __put(1, if(e1_Phil, 2, 1)) .
+         P(s2_Phil = if(e1_Phil, 1, 5), s9_Fork1 = 1, m_Fork8 = dc9)
+     + sum e1_Phil: Bool.
+         ((if(e1_Phil, s2_Phil == 5, s2_Phil == 4) && s11_Fork1 == 2) && 1 == m_Fork10 && if(e1_Phil, 2, 1) == 6) ->
+         __put(1, if(e1_Phil, 2, 1)) .
+         P(s2_Phil = if(e1_Phil, 1, 5), s11_Fork1 = 1, m_Fork10 = dc11)
+     + sum e1_Phil: Bool.
+         ((if(e1_Phil, s2_Phil == 5, s2_Phil == 4) && s13_Fork1 == 2) && 1 == m_Fork12 && if(e1_Phil, 2, 1) == 7) ->
+         __put(1, if(e1_Phil, 2, 1)) .
+         P(s2_Phil = if(e1_Phil, 1, 5), s13_Fork1 = 1, m_Fork12 = dc13)
+     + sum e1_Phil: Bool.
+         ((if(e1_Phil, s2_Phil == 5, s2_Phil == 4) && s15_Fork1 == 2) && 1 == m_Fork14 && if(e1_Phil, 2, 1) == 8) ->
+         __put(1, if(e1_Phil, 2, 1)) .
+         P(s2_Phil = if(e1_Phil, 1, 5), s15_Fork1 = 1, m_Fork14 = dc15)
+     + sum e1_Phil: Bool.
+         ((if(e1_Phil, s2_Phil == 5, s2_Phil == 4) && s17_Fork1 == 2) && 1 == m_Fork16 && if(e1_Phil, 2, 1) == 9) ->
+         __put(1, if(e1_Phil, 2, 1)) .
+         P(s2_Phil = if(e1_Phil, 1, 5), s17_Fork1 = 1, m_Fork16 = dc17)
+     + sum e1_Phil: Bool.
+         ((if(e1_Phil, s2_Phil == 5, s2_Phil == 4) && s19_Fork1 == 2) && 1 == m_Fork18 && if(e1_Phil, 2, 1) == 10) ->
+         __put(1, if(e1_Phil, 2, 1)) .
+         P(s2_Phil = if(e1_Phil, 1, 5), s19_Fork1 = 1, m_Fork18 = dc19)
+     + delta;
+
+init P(1, dc, 1, 1, dc2, 1, 1, dc4, 1, 1, dc6, 1, 1, dc8, 1, 1, dc10, 1, 1, dc12, 1, 1, dc14, 1, 1, dc16, 1, 1, dc18, 1);

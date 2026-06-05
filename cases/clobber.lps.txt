@@ -1,0 +1,67 @@
+sort Position = struct Black | White | Empty;
+     Direction = struct Up | Right | Down | Left;
+     Row = List(Position);
+     Board = List(Row);
+
+map  N,M: Pos;
+     At: Pos # Pos # Board -> Position;
+     At: Pos # Pos # Direction # Board -> Position;
+     At: Pos # Row -> Position;
+     Put: Position # Pos # Pos # Board -> Board;
+     Put: Position # Pos # Pos # Direction # Board -> Board;
+     Put: Position # Pos # Row -> Row;
+     CanMove: Pos # Pos # Position # Position # Board -> Bool;
+
+var  b: Board;
+     r: Row;
+     p,p': Position;
+     x,y: Pos;
+eqn  N  =  4;
+     M  =  4;
+     At(x, y, Up, b)  =  At(x, y + 1, b);
+     At(x, y, Right, b)  =  At(x + 1, y, b);
+     (y > 1)  ->  At(x, y, Down, b)  =  At(x, Int2Pos(y - 1), b);
+     (y == 1)  ->  At(x, y, Down, b)  =  Empty;
+     (x > 1)  ->  At(x, y, Left, b)  =  At(Int2Pos(x - 1), y, b);
+     (x == 1)  ->  At(x, y, Left, b)  =  Empty;
+     At(x, y, [])  =  Empty;
+     (y == 1)  ->  At(x, y, r |> b)  =  At(x, r);
+     (y > M)  ->  At(x, y, b)  =  Empty;
+     (1 < y && y <= M)  ->  At(x, y, r |> b)  =  At(x, Int2Pos(y - 1), b);
+     At(x, [])  =  Empty;
+     (x == 1)  ->  At(x, p |> r)  =  p;
+     (x > N)  ->  At(x, p |> r)  =  Empty;
+     (1 < x && x <= N)  ->  At(x, p |> r)  =  At(Int2Pos(x - 1), r);
+     Put(p, x, y, Up, b)  =  Put(p, x, y + 1, b);
+     Put(p, x, y, Right, b)  =  Put(p, x + 1, y, b);
+     (y > 1)  ->  Put(p, x, y, Down, b)  =  Put(p, x, Int2Pos(y - 1), b);
+     (x > 1)  ->  Put(p, x, y, Left, b)  =  Put(p, Int2Pos(x - 1), y, b);
+     (y == 1)  ->  Put(p, x, y, r |> b)  =  Put(p, x, r) |> b;
+     (y > 1)  ->  Put(p, x, y, r |> b)  =  r |> Put(p, x, Int2Pos(y - 1), b);
+     (x == 1)  ->  Put(p, x, p' |> r)  =  p |> r;
+     (x > 1)  ->  Put(p, x, p' |> r)  =  p' |> Put(p, Int2Pos(x - 1), r);
+     (x == N && y == M)  ->  CanMove(x, y, p, p', b)  =  At(x, y, b) == p && (At(x, y, Down, b) == p' || At(x, y, Left, b) == p');
+     (x == N && y < M)  ->  CanMove(x, y, p, p', b)  =  At(x, y, b) == p && (At(x, y, Up, b) == p' || At(x, y, Down, b) == p' || At(x, y, Left, b) == p') || CanMove(1, y + 1, p, p', b);
+     (x < N)  ->  CanMove(x, y, p, p', b)  =  At(x, y, b) == p && (At(x, y, Up, b) == p' || At(x, y, Right, b) == p' || At(x, y, Down, b) == p' || At(x, y, Left, b) == p') || CanMove(x + 1, y, p, p', b);
+
+act  WhiteMove,BlackMove: Pos # Pos # Direction;
+     WhiteWins,BlackWins;
+
+proc P(b_Clobber: List(List(Position)), WhiteMoves_Clobber: Bool) =
+       (!WhiteMoves_Clobber && !(At(1, 1, b_Clobber) == Black && (At(1, 2, b_Clobber) == White || At(2, 1, b_Clobber) == White) || At(2, 1, b_Clobber) == Black && (At(2, 2, b_Clobber) == White || At(3, 1, b_Clobber) == White || At(1, 1, b_Clobber) == White) || At(3, 1, b_Clobber) == Black && (At(3, 2, b_Clobber) == White || At(4, 1, b_Clobber) == White || At(2, 1, b_Clobber) == White) || At(4, 1, b_Clobber) == Black && (At(4, 2, b_Clobber) == White || At(3, 1, b_Clobber) == White) || At(1, 2, b_Clobber) == Black && (At(1, 3, b_Clobber) == White || At(2, 2, b_Clobber) == White || At(1, 1, b_Clobber) == White) || At(2, 2, b_Clobber) == Black && (At(2, 3, b_Clobber) == White || At(3, 2, b_Clobber) == White || At(2, 1, b_Clobber) == White || At(1, 2, b_Clobber) == White) || At(3, 2, b_Clobber) == Black && (At(3, 3, b_Clobber) == White || At(4, 2, b_Clobber) == White || At(3, 1, b_Clobber) == White || At(2, 2, b_Clobber) == White) || At(4, 2, b_Clobber) == Black && (At(4, 3, b_Clobber) == White || At(4, 1, b_Clobber) == White || At(3, 2, b_Clobber) == White) || At(1, 3, b_Clobber) == Black && (At(1, 4, b_Clobber) == White || At(2, 3, b_Clobber) == White || At(1, 2, b_Clobber) == White) || At(2, 3, b_Clobber) == Black && (At(2, 4, b_Clobber) == White || At(3, 3, b_Clobber) == White || At(2, 2, b_Clobber) == White || At(1, 3, b_Clobber) == White) || At(3, 3, b_Clobber) == Black && (At(3, 4, b_Clobber) == White || At(4, 3, b_Clobber) == White || At(3, 2, b_Clobber) == White || At(2, 3, b_Clobber) == White) || At(4, 3, b_Clobber) == Black && (At(4, 4, b_Clobber) == White || At(4, 2, b_Clobber) == White || At(3, 3, b_Clobber) == White) || At(1, 4, b_Clobber) == Black && (At(2, 4, b_Clobber) == White || At(1, 3, b_Clobber) == White) || At(2, 4, b_Clobber) == Black && (At(3, 4, b_Clobber) == White || At(2, 3, b_Clobber) == White || At(1, 4, b_Clobber) == White) || At(3, 4, b_Clobber) == Black && (At(4, 4, b_Clobber) == White || At(3, 3, b_Clobber) == White || At(2, 4, b_Clobber) == White) || At(4, 4, b_Clobber) == Black && (At(4, 3, b_Clobber) == White || At(3, 4, b_Clobber) == White))) ->
+         WhiteWins .
+         P()
+     + (WhiteMoves_Clobber && !(At(1, 1, b_Clobber) == White && (At(1, 2, b_Clobber) == Black || At(2, 1, b_Clobber) == Black) || At(2, 1, b_Clobber) == White && (At(2, 2, b_Clobber) == Black || At(3, 1, b_Clobber) == Black || At(1, 1, b_Clobber) == Black) || At(3, 1, b_Clobber) == White && (At(3, 2, b_Clobber) == Black || At(4, 1, b_Clobber) == Black || At(2, 1, b_Clobber) == Black) || At(4, 1, b_Clobber) == White && (At(4, 2, b_Clobber) == Black || At(3, 1, b_Clobber) == Black) || At(1, 2, b_Clobber) == White && (At(1, 3, b_Clobber) == Black || At(2, 2, b_Clobber) == Black || At(1, 1, b_Clobber) == Black) || At(2, 2, b_Clobber) == White && (At(2, 3, b_Clobber) == Black || At(3, 2, b_Clobber) == Black || At(2, 1, b_Clobber) == Black || At(1, 2, b_Clobber) == Black) || At(3, 2, b_Clobber) == White && (At(3, 3, b_Clobber) == Black || At(4, 2, b_Clobber) == Black || At(3, 1, b_Clobber) == Black || At(2, 2, b_Clobber) == Black) || At(4, 2, b_Clobber) == White && (At(4, 3, b_Clobber) == Black || At(4, 1, b_Clobber) == Black || At(3, 2, b_Clobber) == Black) || At(1, 3, b_Clobber) == White && (At(1, 4, b_Clobber) == Black || At(2, 3, b_Clobber) == Black || At(1, 2, b_Clobber) == Black) || At(2, 3, b_Clobber) == White && (At(2, 4, b_Clobber) == Black || At(3, 3, b_Clobber) == Black || At(2, 2, b_Clobber) == Black || At(1, 3, b_Clobber) == Black) || At(3, 3, b_Clobber) == White && (At(3, 4, b_Clobber) == Black || At(4, 3, b_Clobber) == Black || At(3, 2, b_Clobber) == Black || At(2, 3, b_Clobber) == Black) || At(4, 3, b_Clobber) == White && (At(4, 4, b_Clobber) == Black || At(4, 2, b_Clobber) == Black || At(3, 3, b_Clobber) == Black) || At(1, 4, b_Clobber) == White && (At(2, 4, b_Clobber) == Black || At(1, 3, b_Clobber) == Black) || At(2, 4, b_Clobber) == White && (At(3, 4, b_Clobber) == Black || At(2, 3, b_Clobber) == Black || At(1, 4, b_Clobber) == Black) || At(3, 4, b_Clobber) == White && (At(4, 4, b_Clobber) == Black || At(3, 3, b_Clobber) == Black || At(2, 4, b_Clobber) == Black) || At(4, 4, b_Clobber) == White && (At(4, 3, b_Clobber) == Black || At(3, 4, b_Clobber) == Black))) ->
+         BlackWins .
+         P()
+     + sum x_Clobber,y_Clobber: Pos,dir_Clobber: Direction.
+         (!WhiteMoves_Clobber && x_Clobber <= 4 && y_Clobber <= 4 && At(x_Clobber, y_Clobber, b_Clobber) == Black && At(x_Clobber, y_Clobber, dir_Clobber, b_Clobber) == White) ->
+         BlackMove(x_Clobber, y_Clobber, dir_Clobber) .
+         P(b_Clobber = Put(Black, x_Clobber, y_Clobber, dir_Clobber, Put(Empty, x_Clobber, y_Clobber, b_Clobber)), WhiteMoves_Clobber = true)
+     + sum x_Clobber1,y_Clobber1: Pos,dir_Clobber1: Direction.
+         (WhiteMoves_Clobber && x_Clobber1 <= 4 && y_Clobber1 <= 4 && At(x_Clobber1, y_Clobber1, b_Clobber) == White && At(x_Clobber1, y_Clobber1, dir_Clobber1, b_Clobber) == Black) ->
+         WhiteMove(x_Clobber1, y_Clobber1, dir_Clobber1) .
+         P(b_Clobber = Put(White, x_Clobber1, y_Clobber1, dir_Clobber1, Put(Empty, x_Clobber1, y_Clobber1, b_Clobber)), WhiteMoves_Clobber = false)
+     + delta;
+
+init P([[Black, White, Black, White], [White, Black, White, Black], [Black, White, Black, White], [White, Black, White, Black]], false);
