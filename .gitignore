@@ -1,0 +1,5 @@
+tmp/
+mCRL2/build/
+merc/target/
+results/
+.venv/
