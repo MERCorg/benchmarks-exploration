@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "merc-py"))
 from merc import Benchmarks, ToolNotFoundError  # type: ignore
 
-RUNS_PER_CONFIG = 5
+RUNS_PER_CONFIG = 1
 
 CACHE_CONFIGS = [
     {"name": "no_cache",     "flags": []},
@@ -37,6 +37,8 @@ def main():
                         help="Maximum thread count (powers of 2 up to this value, default: cpu count)")
     args = parser.parse_args()
 
+    dump_dir = os.path.dirname(os.path.abspath(args.output))
+
     lps2lts = os.path.join(args.mcrl2_path, "lps2lts")
     lps_files = sorted(Path(args.lps_dir).rglob("*.lps"))
 
@@ -44,7 +46,7 @@ def main():
         print(f"No .lps files found in {args.lps_dir}", file=sys.stderr)
         sys.exit(1)
 
-    benchmarks = Benchmarks(runs=RUNS_PER_CONFIG,max_threads=args.max_threads,timeout=600.0)
+    benchmarks = Benchmarks(runs=RUNS_PER_CONFIG,max_threads=args.max_threads,dump_dir=dump_dir)
 
     for lps_file in lps_files:
         name = str(lps_file.relative_to(args.lps_dir))
@@ -55,6 +57,7 @@ def main():
                     name=f"{name}  threads_{t}_{cache['name']}",
                     tool=lps2lts,
                     arguments=[str(lps_file)] + flags,
+                    timeout=600,
                     extra={
                         "file": name,
                         "threads": t,
