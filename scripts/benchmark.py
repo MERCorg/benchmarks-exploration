@@ -44,7 +44,7 @@ def main():
         print(f"No .lps files found in {args.lps_dir}", file=sys.stderr)
         sys.exit(1)
 
-    benchmarks = Benchmarks(runs=RUNS_PER_CONFIG,max_threads=args.max_threads)
+    benchmarks = Benchmarks(runs=RUNS_PER_CONFIG,max_threads=args.max_threads,timeout=600.0)
 
     for lps_file in lps_files:
         name = str(lps_file.relative_to(args.lps_dir))
