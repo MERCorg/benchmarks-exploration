@@ -26,7 +26,7 @@ RUN mkdir ~/mCRL2/build && cd ~/mCRL2/build && cmake . \
  ~/mCRL2
 
 ARG THREADS=8
-RUN cd ~/mCRL2/build && make -j${THREADS} lps2lts
+RUN cd ~/mCRL2/build && make -j${THREADS} lps2lts txt2lps
 
 # Install Rust for building merc
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
