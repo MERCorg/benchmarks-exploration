@@ -1,0 +1,147 @@
+sort D = struct d1 | d2 | d3 | d4 | d5;
+
+act  begin_w2s,begin_w2s_w,begin_w2s_s: Bool # Bool # D;
+     end_w2s,end_w2s_w,end_w2s_s,begin_s2r,begin_s2r_s,begin_s2r_r: Bool # Bool;
+     end_s2r,end_s2r_s,end_s2r_r: Bool # Bool # D;
+     int;
+     readA,readA_,readA__,writeA,writeA_,writeA__,readB,readB_,readB__,writeB,writeB_,writeB__: Bool;
+     readC,readC_,readC__,writeC,writeC_,writeC__: Bool # Bool;
+     begin_write,end_read: D;
+     end_write,begin_read;
+
+proc P(s1_Reader: Pos, y_Reader: D, c_Reader,b_Reader: Bool, s2_Writer: Pos, a'_Writer,a_Writer: Bool, x_Writer: D, readstatus_Y,writestatus_Y: Pos, v_Y,vw_Y,vr_Y: D, readstatus_Y1,writestatus_Y1: Pos, v_Y1,vw_Y1,vr_Y1: D, readstatus_Y2,writestatus_Y2: Pos, v_Y2,vw_Y2,vr_Y2: D, readstatus_Y3,writestatus_Y3: Pos, v_Y3,vw_Y3,vr_Y3: D, a_A,b_B,c_C,c_C1: Bool) =
+       (s1_Reader == 1) ->
+         begin_read .
+         P(s1_Reader = 4, y_Reader = d1, c_Reader = false, b_Reader = false)
+     + (s1_Reader == 7) ->
+         end_read(y_Reader) .
+         P(s1_Reader = 1, y_Reader = d1, c_Reader = false, b_Reader = false)
+     + sum x2_Writer: D.
+         (s2_Writer == 1) ->
+         begin_write(x2_Writer) .
+         P(s2_Writer = 3, a'_Writer = false, a_Writer = false, x_Writer = x2_Writer)
+     + (s2_Writer == 8) ->
+         end_write .
+         P(s2_Writer = 1, a'_Writer = false, a_Writer = false, x_Writer = d1)
+     + (readstatus_Y == 2 && writestatus_Y == 1) ->
+         tau .
+         P(readstatus_Y = 3, vr_Y = v_Y)
+     + sum w_Y: D.
+         (readstatus_Y == 2 && !(writestatus_Y == 1)) ->
+         tau .
+         P(readstatus_Y = 3, vr_Y = w_Y)
+     + (writestatus_Y == 2) ->
+         tau .
+         P(writestatus_Y = 3, v_Y = vw_Y)
+     + (readstatus_Y1 == 2 && writestatus_Y1 == 1) ->
+         tau .
+         P(readstatus_Y1 = 3, vr_Y1 = v_Y1)
+     + sum w_Y2: D.
+         (readstatus_Y1 == 2 && !(writestatus_Y1 == 1)) ->
+         tau .
+         P(readstatus_Y1 = 3, vr_Y1 = w_Y2)
+     + (writestatus_Y1 == 2) ->
+         tau .
+         P(writestatus_Y1 = 3, v_Y1 = vw_Y1)
+     + (readstatus_Y2 == 2 && writestatus_Y2 == 1) ->
+         tau .
+         P(readstatus_Y2 = 3, vr_Y2 = v_Y2)
+     + sum w_Y4: D.
+         (readstatus_Y2 == 2 && !(writestatus_Y2 == 1)) ->
+         tau .
+         P(readstatus_Y2 = 3, vr_Y2 = w_Y4)
+     + (writestatus_Y2 == 2) ->
+         tau .
+         P(writestatus_Y2 = 3, v_Y2 = vw_Y2)
+     + (readstatus_Y3 == 2 && writestatus_Y3 == 1) ->
+         tau .
+         P(readstatus_Y3 = 3, vr_Y3 = v_Y3)
+     + sum w_Y6: D.
+         (readstatus_Y3 == 2 && !(writestatus_Y3 == 1)) ->
+         tau .
+         P(readstatus_Y3 = 3, vr_Y3 = w_Y6)
+     + (writestatus_Y3 == 2) ->
+         tau .
+         P(writestatus_Y3 = 3, v_Y3 = vw_Y3)
+     + (s2_Writer == 2 && a_Writer) ->
+         tau .
+         P(s2_Writer = 4, a'_Writer = c_C)
+     + (s2_Writer == 2 && !a_Writer) ->
+         tau .
+         P(s2_Writer = 4, a'_Writer = c_C1)
+     + sum a5_Writer: Bool.
+         (s2_Writer == 3 && !a5_Writer == b_B) ->
+         tau .
+         P(s2_Writer = 2, a'_Writer = false, a_Writer = a5_Writer, x_Writer = x_Writer)
+     + ((s2_Writer == 4 && writestatus_Y == 1) && a_Writer && !a'_Writer) ->
+         tau .
+         P(s2_Writer = 5, x_Writer = d1, writestatus_Y = 2, vw_Y = x_Writer)
+     + ((s2_Writer == 4 && writestatus_Y1 == 1) && a_Writer && a'_Writer) ->
+         tau .
+         P(s2_Writer = 5, x_Writer = d1, writestatus_Y1 = 2, vw_Y1 = x_Writer)
+     + ((s2_Writer == 4 && writestatus_Y2 == 1) && !a_Writer && !a'_Writer) ->
+         tau .
+         P(s2_Writer = 5, x_Writer = d1, writestatus_Y2 = 2, vw_Y2 = x_Writer)
+     + ((s2_Writer == 4 && writestatus_Y3 == 1) && !a_Writer && a'_Writer) ->
+         tau .
+         P(s2_Writer = 5, x_Writer = d1, writestatus_Y3 = 2, vw_Y3 = x_Writer)
+     + ((s2_Writer == 5 && writestatus_Y == 3) && a_Writer && !a'_Writer) ->
+         tau .
+         P(s2_Writer = 6, x_Writer = d1, writestatus_Y = 1, v_Y = vw_Y)
+     + ((s2_Writer == 5 && writestatus_Y1 == 3) && a_Writer && a'_Writer) ->
+         tau .
+         P(s2_Writer = 6, x_Writer = d1, writestatus_Y1 = 1, v_Y1 = vw_Y1)
+     + ((s2_Writer == 5 && writestatus_Y2 == 3) && !a_Writer && !a'_Writer) ->
+         tau .
+         P(s2_Writer = 6, x_Writer = d1, writestatus_Y2 = 1, v_Y2 = vw_Y2)
+     + ((s2_Writer == 5 && writestatus_Y3 == 3) && !a_Writer && a'_Writer) ->
+         tau .
+         P(s2_Writer = 6, x_Writer = d1, writestatus_Y3 = 1, v_Y3 = vw_Y3)
+     + (s2_Writer == 6 && a_Writer) ->
+         tau .
+         P(s2_Writer = 7, a'_Writer = false, x_Writer = d1, c_C = !a'_Writer)
+     + (s2_Writer == 6 && !a_Writer) ->
+         tau .
+         P(s2_Writer = 7, a'_Writer = false, x_Writer = d1, c_C1 = !a'_Writer)
+     + (s2_Writer == 7) ->
+         tau .
+         P(s2_Writer = 8, a'_Writer = false, a_Writer = false, x_Writer = d1, a_A = a_Writer)
+     + ((s1_Reader == 2 && readstatus_Y == 3) && b_Reader && c_Reader) ->
+         tau .
+         P(s1_Reader = 7, y_Reader = vr_Y, c_Reader = false, b_Reader = false, readstatus_Y = 1)
+     + ((s1_Reader == 2 && readstatus_Y1 == 3) && b_Reader && !c_Reader) ->
+         tau .
+         P(s1_Reader = 7, y_Reader = vr_Y1, c_Reader = false, b_Reader = false, readstatus_Y1 = 1)
+     + ((s1_Reader == 2 && readstatus_Y2 == 3) && !b_Reader && c_Reader) ->
+         tau .
+         P(s1_Reader = 7, y_Reader = vr_Y2, c_Reader = false, b_Reader = false, readstatus_Y2 = 1)
+     + ((s1_Reader == 2 && readstatus_Y3 == 3) && !b_Reader && !c_Reader) ->
+         tau .
+         P(s1_Reader = 7, y_Reader = vr_Y3, c_Reader = false, b_Reader = false, readstatus_Y3 = 1)
+     + (s1_Reader == 3 && b_Reader) ->
+         tau .
+         P(s1_Reader = 6, y_Reader = d1, c_Reader = c_C)
+     + (s1_Reader == 3 && !b_Reader) ->
+         tau .
+         P(s1_Reader = 6, y_Reader = d1, c_Reader = c_C1)
+     + (s1_Reader == 4) ->
+         tau .
+         P(s1_Reader = 5, y_Reader = d1, c_Reader = false, b_Reader = a_A)
+     + (s1_Reader == 5) ->
+         tau .
+         P(s1_Reader = 3, y_Reader = d1, c_Reader = false, b_Reader = b_Reader, b_B = b_Reader)
+     + ((s1_Reader == 6 && readstatus_Y == 1) && b_Reader && c_Reader) ->
+         tau .
+         P(s1_Reader = 2, y_Reader = d1, c_Reader = c_Reader, b_Reader = b_Reader, readstatus_Y = 2)
+     + ((s1_Reader == 6 && readstatus_Y1 == 1) && b_Reader && !c_Reader) ->
+         tau .
+         P(s1_Reader = 2, y_Reader = d1, c_Reader = c_Reader, b_Reader = b_Reader, readstatus_Y1 = 2)
+     + ((s1_Reader == 6 && readstatus_Y2 == 1) && !b_Reader && c_Reader) ->
+         tau .
+         P(s1_Reader = 2, y_Reader = d1, c_Reader = c_Reader, b_Reader = b_Reader, readstatus_Y2 = 2)
+     + ((s1_Reader == 6 && readstatus_Y3 == 1) && !b_Reader && !c_Reader) ->
+         tau .
+         P(s1_Reader = 2, y_Reader = d1, c_Reader = c_Reader, b_Reader = b_Reader, readstatus_Y3 = 2)
+     + delta;
+
+init P(1, d1, false, false, 1, false, false, d1, 1, 1, d1, d1, d1, 1, 1, d1, d1, d1, 1, 1, d1, d1, d1, 1, 1, d1, d1, d1, true, true, true, true);

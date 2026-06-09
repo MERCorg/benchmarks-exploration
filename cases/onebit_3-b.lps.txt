@@ -1,0 +1,70 @@
+sort D = struct d1 | d2 | d3;
+     Bit = struct e0 | e1;
+     Frame = struct frame(dat: D, bit1: Bit, bit2: Bit);
+     Status = struct read?eq_read | choice?eq_choice | del?eq_del;
+
+map  inv: Bit -> Bit;
+
+eqn  inv(e0)  =  e1;
+     inv(e1)  =  e0;
+
+act  ra,sb,rc,sd: D;
+     rcl,scl,i_del,i_lost,ccl;
+     r,s,c,s2,r2,c2,s4,r4,c4: Frame;
+
+proc P(ready_S,rec_S,sts_S: Bool, d_S,e_S: D, p_S,q_S: Bit, f_C: Frame, st_C: Status, ready_S1,rec_S1,sts_S1: Bool, d_S1,e_S1: D, p_S1,q_S1: Bit, f_C1: Frame, st_C1: Status) =
+       sum d4_S: D.
+         (ready_S) ->
+         ra(d4_S) .
+         P(ready_S = false, sts_S = false, d_S = d4_S, p_S = inv(p_S))
+     + (!rec_S) ->
+         sd(e_S) .
+         P(rec_S = true)
+     + (eq_choice(st_C)) ->
+         tau .
+         P(st_C = del)
+     + (eq_choice(st_C)) ->
+         tau .
+         P(st_C = read)
+     + tau .
+         P(sts_S = false)
+     + (!sts_S && eq_read(st_C)) ->
+         tau .
+         P(sts_S = true, f_C = frame(d_S, p_S, q_S), st_C = choice)
+     + sum d4_S1: D.
+         (ready_S1) ->
+         rc(d4_S1) .
+         P(ready_S1 = false, sts_S1 = false, d_S1 = d4_S1, p_S1 = inv(p_S1))
+     + (!rec_S1) ->
+         sb(e_S1) .
+         P(rec_S1 = true)
+     + (eq_choice(st_C1)) ->
+         tau .
+         P(st_C1 = del)
+     + (eq_choice(st_C1)) ->
+         tau .
+         P(st_C1 = read)
+     + tau .
+         P(sts_S1 = false)
+     + (!sts_S1 && eq_read(st_C1)) ->
+         tau .
+         P(sts_S1 = true, f_C1 = frame(d_S1, p_S1, q_S1), st_C1 = choice)
+     + sum f_S: D,b2_S: Bit.
+         ((rec_S && eq_del(st_C1)) && frame(f_S, inv(q_S), b2_S) == f_C1) ->
+         tau .
+         P(ready_S = b2_S == p_S, rec_S = false, e_S = f_S, q_S = inv(q_S), st_C1 = read)
+     + sum f_S1: D,b1_S1,b2_S1: Bit.
+         ((!(rec_S && b1_S1 == inv(q_S)) && eq_del(st_C1)) && frame(f_S1, b1_S1, b2_S1) == f_C1) ->
+         tau .
+         P(ready_S = b2_S1 == p_S, st_C1 = read)
+     + sum f_S2: D,b2_S2: Bit.
+         ((eq_del(st_C) && rec_S1) && frame(f_S2, inv(q_S1), b2_S2) == f_C) ->
+         tau .
+         P(st_C = read, ready_S1 = b2_S2 == p_S1, rec_S1 = false, e_S1 = f_S2, q_S1 = inv(q_S1))
+     + sum f_S3: D,b1_S3,b2_S3: Bit.
+         ((eq_del(st_C) && !(rec_S1 && b1_S3 == inv(q_S1))) && frame(f_S3, b1_S3, b2_S3) == f_C) ->
+         tau .
+         P(st_C = read, ready_S1 = b2_S3 == p_S1)
+     + delta;
+
+init P(true, true, true, d1, d1, e0, e0, frame(d1, e0, e0), read, true, true, true, d1, d1, e0, e0, frame(d1, e0, e0), read);

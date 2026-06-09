@@ -1,0 +1,21 @@
+sort D = struct d1 | d2;
+     Error = struct e;
+
+act  r1,s4: D;
+     s2,r2,c2,s3,r3,c3: D # Bool;
+     s3,r3,c3: Error;
+     s5,r5,c5,s6,r6,c6: Bool;
+     s6,r6,c6: Error;
+     i;
+
+proc P(s1_Buffer: Pos, d_Buffer: D) =
+       sum d3_Buffer: D.
+         (s1_Buffer == 1) ->
+         r1(d3_Buffer) .
+         P(s1_Buffer = 2, d_Buffer = d3_Buffer)
+     + (s1_Buffer == 2) ->
+         s4(d_Buffer) .
+         P(s1_Buffer = 1, d_Buffer = d1)
+     + delta;
+
+init P(1, d1);

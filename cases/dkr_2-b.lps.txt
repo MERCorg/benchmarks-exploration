@@ -1,0 +1,218 @@
+sort Triple = struct triple(triple_i: Nat, triple_h: Nat, triple_b: Bool);
+     Multiset = List(Triple);
+
+map  N: Pos;
+     rmv,add: Triple # Multiset -> Multiset;
+     elt: Triple # Multiset -> Bool;
+     modpred: Nat -> Nat;
+
+var  ms,ms': Multiset;
+     t,t': Triple;
+     m: Nat;
+eqn  N  =  2;
+     rmv(t, [])  =  [];
+     (t == t')  ->  rmv(t, t' |> ms)  =  ms;
+     (t != t')  ->  rmv(t, t' |> ms)  =  t' |> rmv(t, ms);
+     add(t, [])  =  [t];
+     (t' < t)  ->  add(t, t' |> ms)  =  t' |> add(t, ms);
+     (t <= t')  ->  add(t, t' |> ms)  =  t |> t' |> ms;
+     elt(t, [])  =  false;
+     (t < t')  ->  elt(t, t' |> ms)  =  false;
+     elt(t, t |> ms)  =  true;
+     (t' < t)  ->  elt(t, t' |> ms)  =  elt(t, ms);
+     (m > 0)  ->  modpred(m)  =  Int2Nat(m - 1);
+     modpred(0)  =  Int2Nat(N - 1);
+
+act  d1,s1,c_s1,d2,s2,c_s2,e1,r1,c_r1,e2,r2,c_r2: Nat # Triple;
+     leader;
+
+proc P(s3_A1: Pos, b_A1: Bool, h_A1,i'_A1,i_A1,id_A1: Nat, bit_A1: Bool, s4_A1: Pos, b_A: Bool, h_A,i'_A,i_A,id_A,x_A: Nat, bit_A: Bool, ms_Chan,ms'_Chan,ms_Chan1,ms'_Chan1: List(Triple)) =
+       (s3_A1 == 8) ->
+         leader .
+         P(s3_A1 = 7, b_A1 = false, h_A1 = 0, i'_A1 = 0, i_A1 = 0, id_A1 = 0, bit_A1 = false)
+     + (s4_A1 == 8) ->
+         leader .
+         P(s4_A1 = 7, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = 0, x_A = 0, bit_A = false)
+     + sum y_A2: Nat.
+         ((s4_A1 == 1 && y_A2 < 2) && 0 == x_A) ->
+         tau .
+         P(s4_A1 = 2, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = y_A2, ms_Chan = add(triple(y_A2, 1, bit_A), ms_Chan))
+     + sum y_A2: Nat.
+         ((s4_A1 == 1 && y_A2 < 2) && 1 == x_A) ->
+         tau .
+         P(s4_A1 = 2, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = y_A2, ms_Chan1 = add(triple(y_A2, 1, bit_A), ms_Chan1))
+     + sum i8_A1: Nat.
+         ((s4_A1 == 2 && elt(triple(i8_A1, 2, bit_A), ms_Chan)) && 0 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 8, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = 0, x_A = 0, bit_A = false, ms_Chan = rmv(triple(i8_A1, 2, bit_A), ms_Chan))
+     + sum i8_A1: Nat.
+         ((s4_A1 == 2 && elt(triple(i8_A1, 2, bit_A), ms_Chan1)) && 1 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 8, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = 0, x_A = 0, bit_A = false, ms_Chan1 = rmv(triple(i8_A1, 2, bit_A), ms_Chan1))
+     + sum i9_A1,h12_A1: Nat.
+         (((s4_A1 == 2 && !(h12_A1 == 2)) && elt(triple(i9_A1, h12_A1, bit_A), ms_Chan)) && 0 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 9, b_A = false, h_A = h12_A1, i'_A = 0, i_A = i9_A1, ms_Chan = rmv(triple(i9_A1, h12_A1, bit_A), ms_Chan))
+     + sum i9_A1,h12_A1: Nat.
+         (((s4_A1 == 2 && !(h12_A1 == 2)) && elt(triple(i9_A1, h12_A1, bit_A), ms_Chan1)) && 1 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 9, b_A = false, h_A = h12_A1, i'_A = 0, i_A = i9_A1, ms_Chan1 = rmv(triple(i9_A1, h12_A1, bit_A), ms_Chan1))
+     + sum i10_A1,h13_A1: Nat.
+         ((s4_A1 == 2 && elt(triple(i10_A1, h13_A1, bit_A), ms'_Chan)) && 0 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 4, b_A = false, h_A = 0, i'_A = 0, i_A = i10_A1, ms'_Chan = rmv(triple(i10_A1, h13_A1, bit_A), ms'_Chan))
+     + sum i10_A1,h13_A1: Nat.
+         ((s4_A1 == 2 && elt(triple(i10_A1, h13_A1, bit_A), ms'_Chan1)) && 1 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 4, b_A = false, h_A = 0, i'_A = 0, i_A = i10_A1, ms'_Chan1 = rmv(triple(i10_A1, h13_A1, bit_A), ms'_Chan1))
+     + sum i'4_A1,h14_A1: Nat.
+         ((s4_A1 == 3 && elt(triple(i'4_A1, h14_A1, bit_A), ms'_Chan)) && 0 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 5, b_A = false, h_A = 0, i'_A = i'4_A1, ms'_Chan = rmv(triple(i'4_A1, h14_A1, bit_A), ms'_Chan))
+     + sum i'4_A1,h14_A1: Nat.
+         ((s4_A1 == 3 && elt(triple(i'4_A1, h14_A1, bit_A), ms'_Chan1)) && 1 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 5, b_A = false, h_A = 0, i'_A = i'4_A1, ms'_Chan1 = rmv(triple(i'4_A1, h14_A1, bit_A), ms'_Chan1))
+     + sum i'5_A1: Nat.
+         ((s4_A1 == 4 && elt(triple(i'5_A1, 2, bit_A), ms_Chan)) && 0 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 8, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = 0, x_A = 0, bit_A = false, ms_Chan = rmv(triple(i'5_A1, 2, bit_A), ms_Chan))
+     + sum i'5_A1: Nat.
+         ((s4_A1 == 4 && elt(triple(i'5_A1, 2, bit_A), ms_Chan1)) && 1 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 8, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = 0, x_A = 0, bit_A = false, ms_Chan1 = rmv(triple(i'5_A1, 2, bit_A), ms_Chan1))
+     + sum i'6_A1,h16_A1: Nat.
+         (((s4_A1 == 4 && !(h16_A1 == 2)) && elt(triple(i'6_A1, h16_A1, bit_A), ms_Chan)) && 0 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 10, b_A = false, h_A = h16_A1, i'_A = i'6_A1, ms_Chan = rmv(triple(i'6_A1, h16_A1, bit_A), ms_Chan))
+     + sum i'6_A1,h16_A1: Nat.
+         (((s4_A1 == 4 && !(h16_A1 == 2)) && elt(triple(i'6_A1, h16_A1, bit_A), ms_Chan1)) && 1 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 10, b_A = false, h_A = h16_A1, i'_A = i'6_A1, ms_Chan1 = rmv(triple(i'6_A1, h16_A1, bit_A), ms_Chan1))
+     + sum i1_A,h17_A1: Nat,b5_A1: Bool.
+         (((s4_A1 == 5 && (i_A < i'_A || i_A < id_A)) && elt(triple(i1_A, h17_A1, b5_A1), ms_Chan)) && 0 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 11, b_A = b5_A1, h_A = h17_A1, i'_A = 0, i_A = i1_A, id_A = 0, bit_A = false, ms_Chan = rmv(triple(i1_A, h17_A1, b5_A1), ms_Chan))
+     + sum i1_A,h17_A1: Nat,b5_A1: Bool.
+         (((s4_A1 == 5 && (i_A < i'_A || i_A < id_A)) && elt(triple(i1_A, h17_A1, b5_A1), ms_Chan1)) && 1 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 11, b_A = b5_A1, h_A = h17_A1, i'_A = 0, i_A = i1_A, id_A = 0, bit_A = false, ms_Chan1 = rmv(triple(i1_A, h17_A1, b5_A1), ms_Chan1))
+     + sum i2_A,h18_A1: Nat,b6_A1: Bool.
+         (((s4_A1 == 5 && (i_A < i'_A || i_A < id_A)) && elt(triple(i2_A, h18_A1, b6_A1), ms'_Chan)) && 0 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 12, b_A = b6_A1, h_A = h18_A1, i'_A = 0, i_A = i2_A, id_A = 0, bit_A = false, ms'_Chan = rmv(triple(i2_A, h18_A1, b6_A1), ms'_Chan))
+     + sum i2_A,h18_A1: Nat,b6_A1: Bool.
+         (((s4_A1 == 5 && (i_A < i'_A || i_A < id_A)) && elt(triple(i2_A, h18_A1, b6_A1), ms'_Chan1)) && 1 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 12, b_A = b6_A1, h_A = h18_A1, i'_A = 0, i_A = i2_A, id_A = 0, bit_A = false, ms'_Chan1 = rmv(triple(i2_A, h18_A1, b6_A1), ms'_Chan1))
+     + sum y_A3: Nat.
+         ((s4_A1 == 5 && y_A3 < 2 && !(i_A < i'_A || i_A < id_A)) && 0 == x_A) ->
+         tau .
+         P(s4_A1 = 2, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = y_A3, bit_A = !bit_A, ms_Chan = add(triple(y_A3, 1, !bit_A), ms_Chan))
+     + sum y_A3: Nat.
+         ((s4_A1 == 5 && y_A3 < 2 && !(i_A < i'_A || i_A < id_A)) && 1 == x_A) ->
+         tau .
+         P(s4_A1 = 2, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = y_A3, bit_A = !bit_A, ms_Chan1 = add(triple(y_A3, 1, !bit_A), ms_Chan1))
+     + sum i11_A1,h19_A1: Nat,b7_A1: Bool.
+         ((s4_A1 == 6 && elt(triple(i11_A1, h19_A1, b7_A1), ms_Chan)) && 0 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 11, b_A = b7_A1, h_A = h19_A1, i'_A = 0, i_A = i11_A1, id_A = 0, bit_A = false, ms_Chan = rmv(triple(i11_A1, h19_A1, b7_A1), ms_Chan))
+     + sum i11_A1,h19_A1: Nat,b7_A1: Bool.
+         ((s4_A1 == 6 && elt(triple(i11_A1, h19_A1, b7_A1), ms_Chan1)) && 1 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 11, b_A = b7_A1, h_A = h19_A1, i'_A = 0, i_A = i11_A1, id_A = 0, bit_A = false, ms_Chan1 = rmv(triple(i11_A1, h19_A1, b7_A1), ms_Chan1))
+     + sum i12_A1,h20_A1: Nat,b8_A1: Bool.
+         ((s4_A1 == 6 && elt(triple(i12_A1, h20_A1, b8_A1), ms'_Chan)) && 0 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 12, b_A = b8_A1, h_A = h20_A1, i'_A = 0, i_A = i12_A1, id_A = 0, bit_A = false, ms'_Chan = rmv(triple(i12_A1, h20_A1, b8_A1), ms'_Chan))
+     + sum i12_A1,h20_A1: Nat,b8_A1: Bool.
+         ((s4_A1 == 6 && elt(triple(i12_A1, h20_A1, b8_A1), ms'_Chan1)) && 1 == modpred(x_A)) ->
+         tau .
+         P(s4_A1 = 12, b_A = b8_A1, h_A = h20_A1, i'_A = 0, i_A = i12_A1, id_A = 0, bit_A = false, ms'_Chan1 = rmv(triple(i12_A1, h20_A1, b8_A1), ms'_Chan1))
+     + (s4_A1 == 9 && 0 == x_A) ->
+         tau .
+         P(s4_A1 = 3, b_A = false, h_A = 0, i'_A = 0, i_A = i_A, ms'_Chan = add(triple(i_A, h_A + 1, bit_A), ms'_Chan))
+     + (s4_A1 == 9 && 1 == x_A) ->
+         tau .
+         P(s4_A1 = 3, b_A = false, h_A = 0, i'_A = 0, i_A = i_A, ms'_Chan1 = add(triple(i_A, h_A + 1, bit_A), ms'_Chan1))
+     + (s4_A1 == 10 && 0 == x_A) ->
+         tau .
+         P(s4_A1 = 5, b_A = false, h_A = 0, i'_A = i_A, i_A = i'_A, ms'_Chan = add(triple(i'_A, h_A + 1, bit_A), ms'_Chan))
+     + (s4_A1 == 10 && 1 == x_A) ->
+         tau .
+         P(s4_A1 = 5, b_A = false, h_A = 0, i'_A = i_A, i_A = i'_A, ms'_Chan1 = add(triple(i'_A, h_A + 1, bit_A), ms'_Chan1))
+     + (s4_A1 == 11 && 0 == x_A) ->
+         tau .
+         P(s4_A1 = 6, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = 0, bit_A = false, ms_Chan = add(triple(i_A, h_A + 1, b_A), ms_Chan))
+     + (s4_A1 == 11 && 1 == x_A) ->
+         tau .
+         P(s4_A1 = 6, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = 0, bit_A = false, ms_Chan1 = add(triple(i_A, h_A + 1, b_A), ms_Chan1))
+     + (s4_A1 == 12 && 0 == x_A) ->
+         tau .
+         P(s4_A1 = 6, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = 0, bit_A = false, ms'_Chan = add(triple(i_A, h_A + 1, b_A), ms'_Chan))
+     + (s4_A1 == 12 && 1 == x_A) ->
+         tau .
+         P(s4_A1 = 6, b_A = false, h_A = 0, i'_A = 0, i_A = 0, id_A = 0, bit_A = false, ms'_Chan1 = add(triple(i_A, h_A + 1, b_A), ms'_Chan1))
+     + sum y_A1: Nat.
+         (s3_A1 == 1 && y_A1 < 2) ->
+         tau .
+         P(s3_A1 = 2, b_A1 = false, h_A1 = 0, i'_A1 = 0, i_A1 = 0, id_A1 = y_A1, ms_Chan = add(triple(y_A1, 1, bit_A1), ms_Chan))
+     + sum i3_A1: Nat.
+         (s3_A1 == 2 && elt(triple(i3_A1, 2, bit_A1), ms_Chan1)) ->
+         tau .
+         P(s3_A1 = 8, b_A1 = false, h_A1 = 0, i'_A1 = 0, i_A1 = 0, id_A1 = 0, bit_A1 = false, ms_Chan1 = rmv(triple(i3_A1, 2, bit_A1), ms_Chan1))
+     + sum i4_A1,h2_A1: Nat.
+         ((s3_A1 == 2 && !(h2_A1 == 2)) && elt(triple(i4_A1, h2_A1, bit_A1), ms_Chan1)) ->
+         tau .
+         P(s3_A1 = 9, b_A1 = false, h_A1 = h2_A1, i'_A1 = 0, i_A1 = i4_A1, ms_Chan1 = rmv(triple(i4_A1, h2_A1, bit_A1), ms_Chan1))
+     + sum i5_A1,h3_A1: Nat.
+         (s3_A1 == 2 && elt(triple(i5_A1, h3_A1, bit_A1), ms'_Chan1)) ->
+         tau .
+         P(s3_A1 = 4, b_A1 = false, h_A1 = 0, i'_A1 = 0, i_A1 = i5_A1, ms'_Chan1 = rmv(triple(i5_A1, h3_A1, bit_A1), ms'_Chan1))
+     + sum i'1_A1,h4_A1: Nat.
+         (s3_A1 == 3 && elt(triple(i'1_A1, h4_A1, bit_A1), ms'_Chan1)) ->
+         tau .
+         P(s3_A1 = 5, b_A1 = false, h_A1 = 0, i'_A1 = i'1_A1, ms'_Chan1 = rmv(triple(i'1_A1, h4_A1, bit_A1), ms'_Chan1))
+     + sum i'2_A1: Nat.
+         (s3_A1 == 4 && elt(triple(i'2_A1, 2, bit_A1), ms_Chan1)) ->
+         tau .
+         P(s3_A1 = 8, b_A1 = false, h_A1 = 0, i'_A1 = 0, i_A1 = 0, id_A1 = 0, bit_A1 = false, ms_Chan1 = rmv(triple(i'2_A1, 2, bit_A1), ms_Chan1))
+     + sum i'3_A1,h6_A1: Nat.
+         ((s3_A1 == 4 && !(h6_A1 == 2)) && elt(triple(i'3_A1, h6_A1, bit_A1), ms_Chan1)) ->
+         tau .
+         P(s3_A1 = 10, b_A1 = false, h_A1 = h6_A1, i'_A1 = i'3_A1, ms_Chan1 = rmv(triple(i'3_A1, h6_A1, bit_A1), ms_Chan1))
+     + sum i1_A1,h7_A1: Nat,b1_A1: Bool.
+         ((s3_A1 == 5 && (i_A1 < i'_A1 || i_A1 < id_A1)) && elt(triple(i1_A1, h7_A1, b1_A1), ms_Chan1)) ->
+         tau .
+         P(s3_A1 = 11, b_A1 = b1_A1, h_A1 = h7_A1, i'_A1 = 0, i_A1 = i1_A1, id_A1 = 0, bit_A1 = false, ms_Chan1 = rmv(triple(i1_A1, h7_A1, b1_A1), ms_Chan1))
+     + sum i2_A1,h8_A1: Nat,b2_A1: Bool.
+         ((s3_A1 == 5 && (i_A1 < i'_A1 || i_A1 < id_A1)) && elt(triple(i2_A1, h8_A1, b2_A1), ms'_Chan1)) ->
+         tau .
+         P(s3_A1 = 12, b_A1 = b2_A1, h_A1 = h8_A1, i'_A1 = 0, i_A1 = i2_A1, id_A1 = 0, bit_A1 = false, ms'_Chan1 = rmv(triple(i2_A1, h8_A1, b2_A1), ms'_Chan1))
+     + sum y_A: Nat.
+         (s3_A1 == 5 && y_A < 2 && !(i_A1 < i'_A1 || i_A1 < id_A1)) ->
+         tau .
+         P(s3_A1 = 2, b_A1 = false, h_A1 = 0, i'_A1 = 0, i_A1 = 0, id_A1 = y_A, bit_A1 = !bit_A1, ms_Chan = add(triple(y_A, 1, !bit_A1), ms_Chan))
+     + sum i6_A1,h9_A1: Nat,b3_A1: Bool.
+         (s3_A1 == 6 && elt(triple(i6_A1, h9_A1, b3_A1), ms_Chan1)) ->
+         tau .
+         P(s3_A1 = 11, b_A1 = b3_A1, h_A1 = h9_A1, i'_A1 = 0, i_A1 = i6_A1, id_A1 = 0, bit_A1 = false, ms_Chan1 = rmv(triple(i6_A1, h9_A1, b3_A1), ms_Chan1))
+     + sum i7_A1,h10_A1: Nat,b4_A1: Bool.
+         (s3_A1 == 6 && elt(triple(i7_A1, h10_A1, b4_A1), ms'_Chan1)) ->
+         tau .
+         P(s3_A1 = 12, b_A1 = b4_A1, h_A1 = h10_A1, i'_A1 = 0, i_A1 = i7_A1, id_A1 = 0, bit_A1 = false, ms'_Chan1 = rmv(triple(i7_A1, h10_A1, b4_A1), ms'_Chan1))
+     + (s3_A1 == 9) ->
+         tau .
+         P(s3_A1 = 3, b_A1 = false, h_A1 = 0, i'_A1 = 0, i_A1 = i_A1, ms'_Chan = add(triple(i_A1, h_A1 + 1, bit_A1), ms'_Chan))
+     + (s3_A1 == 10) ->
+         tau .
+         P(s3_A1 = 5, b_A1 = false, h_A1 = 0, i'_A1 = i_A1, i_A1 = i'_A1, ms'_Chan = add(triple(i'_A1, h_A1 + 1, bit_A1), ms'_Chan))
+     + (s3_A1 == 11) ->
+         tau .
+         P(s3_A1 = 6, b_A1 = false, h_A1 = 0, i'_A1 = 0, i_A1 = 0, id_A1 = 0, bit_A1 = false, ms_Chan = add(triple(i_A1, h_A1 + 1, b_A1), ms_Chan))
+     + (s3_A1 == 12) ->
+         tau .
+         P(s3_A1 = 6, b_A1 = false, h_A1 = 0, i'_A1 = 0, i_A1 = 0, id_A1 = 0, bit_A1 = false, ms'_Chan = add(triple(i_A1, h_A1 + 1, b_A1), ms'_Chan))
+     + delta;
+
+init P(1, false, 0, 0, 0, 0, true, 1, false, 0, 0, 0, 0, 1, true, [], [], [], []);

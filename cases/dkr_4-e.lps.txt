@@ -1,0 +1,35 @@
+sort Triple = struct triple(triple_i: Nat, triple_h: Nat, triple_b: Bool);
+     Multiset = List(Triple);
+
+map  N: Pos;
+     rmv,add: Triple # Multiset -> Multiset;
+     elt: Triple # Multiset -> Bool;
+     modpred: Nat -> Nat;
+
+var  ms,ms': Multiset;
+     t,t': Triple;
+     m: Nat;
+eqn  N  =  4;
+     rmv(t, [])  =  [];
+     (t == t')  ->  rmv(t, t' |> ms)  =  ms;
+     (t != t')  ->  rmv(t, t' |> ms)  =  t' |> rmv(t, ms);
+     add(t, [])  =  [t];
+     (t' < t)  ->  add(t, t' |> ms)  =  t' |> add(t, ms);
+     (t <= t')  ->  add(t, t' |> ms)  =  t |> t' |> ms;
+     elt(t, [])  =  false;
+     (t < t')  ->  elt(t, t' |> ms)  =  false;
+     elt(t, t |> ms)  =  true;
+     (t' < t)  ->  elt(t, t' |> ms)  =  elt(t, ms);
+     (m > 0)  ->  modpred(m)  =  Int2Nat(m - 1);
+     modpred(0)  =  Int2Nat(N - 1);
+
+act  d1,s1,c_s1,d2,s2,c_s2,e1,r1,c_r1,e2,r2,c_r2: Nat # Triple;
+     leader;
+
+proc P(x_Leader,y_Leader: Bool) =
+       (x_Leader && y_Leader) ->
+         leader .
+         P(x_Leader = false, y_Leader = false)
+     + delta;
+
+init P(true, true);

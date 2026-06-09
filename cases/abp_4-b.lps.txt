@@ -1,0 +1,60 @@
+sort D = struct d1 | d2 | d3 | d4;
+     Error = struct e;
+
+act  r1,s4: D;
+     s2,r2,c2,s3,r3,c3: D # Bool;
+     s3,r3,c3: Error;
+     s5,r5,c5,s6,r6,c6: Bool;
+     s6,r6,c6: Error;
+     i;
+
+proc P(s1_S: Pos, d_S: D, b_S: Bool, s7_K: Pos, d_K: D, b_K: Bool, s8_L: Pos, b_L: Bool, s9_R: Pos, d_R: D, b_R: Bool) =
+       sum d5_S: D.
+         (s1_S == 1) ->
+         r1(d5_S) .
+         P(s1_S = 2, d_S = d5_S)
+     + (s7_K == 2) ->
+         tau .
+         P(s7_K = 3)
+     + (s7_K == 2) ->
+         tau .
+         P(s7_K = 4, d_K = d1, b_K = false)
+     + (s8_L == 2) ->
+         tau .
+         P(s8_L = 3)
+     + (s8_L == 2) ->
+         tau .
+         P(s8_L = 4, b_L = false)
+     + (s9_R == 2) ->
+         s4(d_R) .
+         P(s9_R = 4, d_R = d1)
+     + (s8_L == 1 && s9_R == 3) ->
+         tau .
+         P(s8_L = 2, b_L = !b_R, s9_R = 1, d_R = d1)
+     + (s8_L == 1 && s9_R == 4) ->
+         tau .
+         P(s8_L = 2, b_L = b_R, s9_R = 1, d_R = d1, b_R = !b_R)
+     + ((s7_K == 3 && s9_R == 1) && b_R == b_K) ->
+         tau .
+         P(s7_K = 1, d_K = d1, b_K = false, s9_R = 2, d_R = d_K)
+     + ((s7_K == 3 && s9_R == 1) && !b_R == b_K) ->
+         tau .
+         P(s7_K = 1, d_K = d1, b_K = false, s9_R = 3, d_R = d1)
+     + (s7_K == 4 && s9_R == 1) ->
+         tau .
+         P(s7_K = 1, d_K = d1, b_K = false, s9_R = 3, d_R = d1)
+     + (s1_S == 2 && s7_K == 1) ->
+         tau .
+         P(s1_S = 3, s7_K = 2, d_K = d_S, b_K = b_S)
+     + ((s1_S == 3 && s8_L == 3) && b_S == b_L) ->
+         tau .
+         P(s1_S = 1, d_S = d1, b_S = !b_S, s8_L = 1, b_L = false)
+     + ((s1_S == 3 && s8_L == 3) && !b_S == b_L) ->
+         tau .
+         P(s1_S = 2, s8_L = 1, b_L = false)
+     + (s1_S == 3 && s8_L == 4) ->
+         tau .
+         P(s1_S = 2, s8_L = 1, b_L = false)
+     + delta;
+
+init P(1, d1, true, 1, d1, false, 1, false, 1, d1, true);

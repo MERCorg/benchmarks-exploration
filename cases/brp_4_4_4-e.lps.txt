@@ -1,0 +1,73 @@
+sort D = struct d1 | d2 | d3 | d4;
+     Bit = struct e0?is_e0 | e1?is_e1;
+     Ind = struct I_fst | I_ok | I_nok | I_inc | I_dk;
+     TComm = struct set | reset | ready | signal | lost;
+
+map  L,N: Pos;
+     inv: Bit -> Bit;
+     indl: List(D) -> Bit;
+     last: List(D) -> Bool;
+     C_ind: List(D) -> Ind;
+     I_ind: Bit # Bit -> Ind;
+
+var  l: List(D);
+     b0,b1: Bit;
+eqn  L  =  4;
+     N  =  4;
+     inv(e0)  =  e1;
+     inv(e1)  =  e0;
+     indl(l)  =  if(#l < 2, e1, e0);
+     last(l)  =  #l < 2;
+     C_ind(l)  =  if(is_e0(indl(l)), I_nok, I_dk);
+     I_ind(b0, e1)  =  I_ok;
+     I_ind(e0, e0)  =  I_inc;
+     I_ind(e1, e0)  =  I_fst;
+
+act  r1: List(D);
+     s1,s4: Ind;
+     s4: D # Ind;
+     r2,s2,c2,s3,r3,c3: Bit # Bit # Bit # D;
+     r7,s7,c7,r8,s8,c8,r9,s9,c9,r10,s10,c10: TComm;
+     r5,s5,c5,r6,s6,c6,i;
+
+proc P(s11_X1: Pos, c_X1: Ind, l_X1: List(D), b_X1: Bit) =
+       sum l1_X1: List(D).
+         (s11_X1 == 1 && #l1_X1 <= 4) ->
+         r1(l1_X1) .
+         P(s11_X1 = 2, c_X1 = I_dk, l_X1 = l1_X1, b_X1 = e1)
+     + (s11_X1 == 2 && b_X1 == e1) ->
+         tau .
+         P(s11_X1 = 3, c_X1 = if(is_e0(if(#l_X1 < 2, e1, e0)), I_nok, I_dk), l_X1 = [], b_X1 = e0)
+     + (s11_X1 == 2 && !(b_X1 == e1)) ->
+         tau .
+         P(s11_X1 = 4, c_X1 = if(is_e0(if(#l_X1 < 2, e1, e0)), I_nok, I_dk), l_X1 = [], b_X1 = e0)
+     + (s11_X1 == 2) ->
+         tau .
+         P(s11_X1 = 6, c_X1 = I_dk)
+     + (s11_X1 == 3) ->
+         s1(c_X1) .
+         P(s11_X1 = 1, c_X1 = I_dk, l_X1 = [], b_X1 = e0)
+     + (s11_X1 == 4) ->
+         s1(c_X1) .
+         P(s11_X1 = 7, c_X1 = I_dk, l_X1 = [], b_X1 = e0)
+     + (s11_X1 == 5 && #l_X1 < 2) ->
+         tau .
+         P(s11_X1 = 3, c_X1 = I_ok, l_X1 = [], b_X1 = e0)
+     + (s11_X1 == 5 && #l_X1 < 2) ->
+         tau .
+         P(s11_X1 = 3, c_X1 = I_dk, l_X1 = [], b_X1 = e0)
+     + (s11_X1 == 5 && !(#l_X1 < 2)) ->
+         tau .
+         P(s11_X1 = 2, c_X1 = I_dk, l_X1 = tail(l_X1), b_X1 = e0)
+     + (s11_X1 == 5 && !(#l_X1 < 2)) ->
+         tau .
+         P(s11_X1 = 4, c_X1 = I_nok, l_X1 = [], b_X1 = e0)
+     + (s11_X1 == 6) ->
+         s4(head(l_X1), I_ind(b_X1, if(#l_X1 < 2, e1, e0))) .
+         P(s11_X1 = 5, c_X1 = I_dk, b_X1 = e0)
+     + (s11_X1 == 7) ->
+         s4(I_nok) .
+         P(s11_X1 = 1, c_X1 = I_dk, l_X1 = [], b_X1 = e0)
+     + delta;
+
+init P(1, I_dk, [], e0);

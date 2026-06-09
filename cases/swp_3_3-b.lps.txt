@@ -1,0 +1,78 @@
+sort D = struct d1 | d2 | d3;
+     DBuf = List(D);
+     BBuf = List(Bool);
+
+map  N: Pos;
+     empty: BBuf;
+     insert: D # Nat # DBuf -> DBuf;
+     insert: Bool # Nat # BBuf -> BBuf;
+     nextempty_mod: Nat # BBuf # Nat # Pos -> Nat;
+     constDbuf: Nat -> DBuf;
+     constBbuf: Nat -> BBuf;
+     q1,q2: DBuf;
+
+var  d,d': D;
+     i,j,m: Nat;
+     q: DBuf;
+     c,c': Bool;
+     n': Pos;
+     b: BBuf;
+eqn  N  =  3;
+     (i == 0)  ->  constDbuf(i)  =  [];
+     (i == 0)  ->  constBbuf(i)  =  [];
+     (i > 0)  ->  constDbuf(i)  =  d1 |> constDbuf(Int2Nat(i - 1));
+     (i > 0)  ->  constBbuf(i)  =  false |> constBbuf(Int2Nat(i - 1));
+     q1  =  constDbuf(N);
+     q2  =  q1;
+     empty  =  constBbuf(N);
+     (i == 0)  ->  insert(d, i, q)  =  d |> tail(q);
+     (i > 0)  ->  insert(d, i, d' |> q)  =  d' |> insert(d, Int2Nat(i - 1), q);
+     (i == 0)  ->  insert(c, i, b)  =  c |> tail(b);
+     (i > 0)  ->  insert(c, i, c' |> b)  =  c' |> insert(c, Int2Nat(i - 1), b);
+     (b . (i mod n') && m > 0)  ->  nextempty_mod(i, b, m, n')  =  nextempty_mod((i + 1) mod 2 * n', b, Int2Nat(m - 1), n');
+     (!(b . (i mod n') && m > 0))  ->  nextempty_mod(i, b, m, n')  =  i mod 2 * n';
+
+act  r1,s4: D;
+     s2,r2,c2,s3,r3,c3: D # Nat;
+     s5,r5,c5,s6,r6,c6: Nat;
+     i;
+
+proc P(l_S,m_S: Nat, q_S: List(D), s7_K: Pos, d_K: D, k_K: Nat, s8_L: Pos, k_L,l'_R: Nat, q'_R: List(D), b_R: List(Bool)) =
+       sum d_S: D.
+         (m_S < 3) ->
+         r1(d_S) .
+         P(m_S = m_S + 1, q_S = insert(d_S, (l_S + m_S) mod 3, q_S))
+     + (s7_K == 2) ->
+         tau .
+         P(s7_K = 3)
+     + (s7_K == 2) ->
+         tau .
+         P(s7_K = 1, d_K = d1, k_K = 0)
+     + (s8_L == 2) ->
+         tau .
+         P(s8_L = 3)
+     + (s8_L == 2) ->
+         tau .
+         P(s8_L = 1, k_L = 0)
+     + (b_R . (l'_R mod 3)) ->
+         s4(q'_R . (l'_R mod 3)) .
+         P(l'_R = (l'_R + 1) mod 6, b_R = insert(false, l'_R mod 3, b_R))
+     + (s8_L == 1) ->
+         tau .
+         P(s8_L = 2, k_L = nextempty_mod(l'_R, b_R, 3, 3))
+     + (s7_K == 3 && (k_K - l'_R) mod 6 < 3) ->
+         tau .
+         P(s7_K = 1, d_K = d1, k_K = 0, q'_R = insert(d_K, k_K mod 3, q'_R), b_R = insert(true, k_K mod 3, b_R))
+     + (s7_K == 3 && !((k_K - l'_R) mod 6 < 3)) ->
+         tau .
+         P(s7_K = 1, d_K = d1, k_K = 0)
+     + sum k_S: Nat.
+         (k_S < m_S && s7_K == 1) ->
+         tau .
+         P(s7_K = 2, d_K = q_S . ((l_S + k_S) mod 3), k_K = (l_S + k_S) mod 6)
+     + (s8_L == 3) ->
+         tau .
+         P(l_S = k_L, m_S = (m_S - k_L + l_S) mod 6, s8_L = 1, k_L = 0)
+     + delta;
+
+init P(0, 0, [d1, d1, d1], 1, d1, 0, 1, 0, 0, [d1, d1, d1], [false, false, false]);
