@@ -1,5 +1,7 @@
-tmp/
+input/
 mCRL2/build/
 merc/target/
-results/
+results*
+verify*
+benchmark*
 .venv/
