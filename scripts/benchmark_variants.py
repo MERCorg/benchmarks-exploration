@@ -15,6 +15,8 @@ CACHE_CONFIGS = [
     {"name": "local", "flags": ["--cached"]},
 ]
 
+TOOL_VARIANTS = ["lps2lts", "lps2ltscf", "lps2ltspr"]
+
 
 def thread_counts(max_threads: int) -> list[int]:
     counts = []
@@ -27,9 +29,9 @@ def thread_counts(max_threads: int) -> list[int]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run lps2lts on every .lps file in a directory"
+        description="Run lps2lts variants on every .lps file in a directory"
     )
-    parser.add_argument("mcrl2_path", help="Path to the directory containing the lps2lts binary")
+    parser.add_argument("mcrl2_path", help="Path to the directory containing lps2lts binaries")
     parser.add_argument("lps_dir", help="Directory to search for .lps files")
     parser.add_argument("--output", "-o", default="results.ndjson", help="Output NDJSON file (default: results.ndjson)")
     parser.add_argument("--max-threads", type=int, default=os.cpu_count() or 1,
@@ -43,7 +45,7 @@ def main():
 
     dump_dir = os.path.dirname(os.path.abspath(args.output))
 
-    lps2lts = os.path.join(args.mcrl2_path, "lps2lts")
+    tools = {name: os.path.join(args.mcrl2_path, name) for name in TOOL_VARIANTS}
     lps_files = sorted(Path(args.lps_dir).rglob("*.lps"))
 
     if not lps_files:
@@ -55,24 +57,26 @@ def main():
     for lps_file in lps_files:
         name = str(lps_file.relative_to(args.lps_dir))
         for t in thread_counts(args.max_threads):
-            for cache in CACHE_CONFIGS:
-                flags = [f"--threads={t}", "-v"] + cache["flags"]
-                if args.aut_dir:
-                    aut_file = os.path.join(args.aut_dir, f"{Path(name).stem}_{cache['name']}.aut")
-                    flags += [aut_file]
-                benchmarks.add(
-                    name=name,
-                    cache_key=f"threads_{t}_{cache['name']}",
-                    tool=lps2lts,
-                    arguments=[str(lps_file)] + flags,
-                    timeout=600,
-                    extra={
-                        "file": name,
-                        "threads": t,
-                        "caching": cache["name"],
-                    },
-                    threads=t
-                )
+            for tool_name, tool_path in tools.items():
+                for cache in CACHE_CONFIGS:
+                    flags = [f"--threads={t}", "-v"] + cache["flags"]
+                    if args.aut_dir:
+                        aut_file = os.path.join(args.aut_dir, f"{Path(name).stem}_{tool_name}_{cache['name']}.aut")
+                        flags += [aut_file]
+                    benchmarks.add(
+                        name=name,
+                        cache_key=f"tool_{tool_name}_threads_{t}_{cache['name']}",
+                        tool=tool_path,
+                        arguments=[str(lps_file)] + flags,
+                        timeout=600,
+                        extra={
+                            "file": name,
+                            "tool": tool_name,
+                            "threads": t,
+                            "caching": cache["name"],
+                        },
+                        threads=t
+                    )
 
     try:
         benchmarks.run(args.output)
