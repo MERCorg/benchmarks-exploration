@@ -25,3 +25,67 @@ The benchmarking script is located at `scripts/benchmark.py`. To run the benchma
 ```bash
 python3 scripts/benchmark.py /root/mCRL2/build/stage/bin /root/input/
 ```
+
+## Scripts
+
+This repository contains three top-level scripts in `scripts/` and helper utilities in `merc-py/merc/`.
+
+### `scripts/prepare.py`
+
+Converts all `.lps.txt` models to `.lps` models using `txt2lps`.
+
+```bash
+python3 scripts/prepare.py <mcrl2_bin_dir> <cases_dir>
+```
+
+### `scripts/benchmark.py`
+
+Runs `lps2lts` on each `.lps` input and writes benchmark results to NDJSON.
+
+- Tests caching variants: `none`, `local`.
+- Tests thread counts: powers of two up to `--max-threads`.
+- Optional: write generated state spaces (`.aut`) with `--aut-dir`.
+
+```bash
+python3 scripts/benchmark.py <mcrl2_bin_dir> <lps_dir> \
+	--output results.ndjson \
+	--max-threads 8 \
+	--aut-dir aut
+```
+
+### `scripts/benchmark_merc.py`
+
+Runs `merc-lps explore-explicit` on each `.lps` input and writes benchmark results to NDJSON.
+
+- Tests caching variants: `none`, `local`, `global`.
+- Optional: write generated state spaces (`.aut`) with `--aut-dir`.
+
+```bash
+python3 scripts/benchmark_merc.py <merc_bin_dir> <lps_dir> \
+	--output results_merc.ndjson \
+	--max-threads 8 \
+	--aut-dir aut_merc
+```
+
+### `merc-py/merc/create_table.py`
+
+Generates a LaTeX table from NDJSON benchmark output (average time and memory).
+
+```bash
+python3 merc-py/merc/create_table.py results.ndjson
+```
+
+### `merc-py/merc/benchmarks.py`
+
+Shared benchmarking engine used by both benchmark scripts.
+
+- Executes runs sequentially or in parallel.
+- Supports timeout and memory limits.
+- Stores per-run stdout/stderr dumps.
+- Appends one NDJSON record per run and can resume from an existing output file.
+
+## Verifying the results
+
+To verify the results, you can compare the generated `.aut` files from both `lps2lts` and `merc-lps explore-explicit` for the same input `.lps` file. They can be produced by passing `--aut-dir` to the respective benchmark scripts.
+
+```bash

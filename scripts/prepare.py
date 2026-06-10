@@ -22,7 +22,7 @@ def main():
         print(f"No .lps.txt files found in {args.lps_dir}", file=sys.stderr)
         sys.exit(1)
 
-    tmp_dir = Path("tmp")
+    tmp_dir = Path("input")
     tmp_dir.mkdir(exist_ok=True)
 
     for lps_file in lps_files:
