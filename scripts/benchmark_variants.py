@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "merc-py"))
 from merc import Benchmarks, ToolNotFoundError  # type: ignore
 
-RUNS_PER_CONFIG = 1
+RUNS_PER_CONFIG = 5
 
 CACHE_CONFIGS = [
     {"name": "none",  "flags": []},

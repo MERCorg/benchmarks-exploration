@@ -1,28 +1,81 @@
 #!/usr/bin/env python3
-"""Compare LTS files grouped by identical prefix using ltscompare -ebisim."""
+"""Compare LTS files grouped by benchmark name using ltscompare -ebisim."""
 
 import argparse
+import json
 import os
 import subprocess
 import sys
 from collections import defaultdict
+from pathlib import Path
 
 
-def find_lts_files(directory):
+def load_ok_aut_prefixes(directory):
+	"""Map successful .aut stems in results.ndjson to their benchmark names."""
+	results_path = os.path.join(directory, 'results.ndjson')
+	if not os.path.isfile(results_path):
+		return {}
+
+	prefixes = {}
+	with open(results_path, encoding='utf-8') as handle:
+		for line_number, line in enumerate(handle, start=1):
+			line = line.strip()
+			if not line:
+				continue
+
+			try:
+				entry = json.loads(line)
+			except json.JSONDecodeError as exc:
+				print(
+					f'WARNING: Failed to parse {results_path}:{line_number}: {exc}',
+					file=sys.stderr,
+				)
+				continue
+
+			if entry.get('status') != 'ok':
+				continue
+
+			name = entry.get('name') or entry.get('file')
+			caching = entry.get('caching')
+			if not isinstance(name, str) or not isinstance(caching, str):
+				continue
+
+			aut_stem = f'{Path(name).stem}_{caching}'
+			prefixes[aut_stem] = name
+
+	return prefixes
+
+
+def find_lts_files(directory, ok_aut_prefixes):
 	"""Return all .aut and .lts files in the given directory."""
 	supported = ('.aut', '.lts')
 	files = []
 	for entry in os.scandir(directory):
-		if entry.is_file() and os.path.splitext(entry.name)[1].lower() in supported:
-			files.append(entry.path)
+		if not entry.is_file():
+			continue
+
+		extension = os.path.splitext(entry.name)[1].lower()
+		if extension not in supported:
+			continue
+
+		if extension == '.aut':
+			stem = os.path.splitext(entry.name)[0]
+			if ok_aut_prefixes and stem not in ok_aut_prefixes:
+				continue
+
+		files.append(entry.path)
 	return sorted(files)
 
 
-def group_by_prefix(paths):
-	"""Group file paths by their prefix (stem split on the last underscore)."""
+def group_by_prefix(paths, aut_prefixes):
+	"""Group file paths by benchmark name, falling back to filename prefix."""
 	groups = defaultdict(list)
 	for path in paths:
 		stem = os.path.splitext(os.path.basename(path))[0]
+		if path.lower().endswith('.aut') and stem in aut_prefixes:
+			groups[aut_prefixes[stem]].append(path)
+			continue
+
 		underscore_pos = stem.rfind('_')
 		if underscore_pos == -1:
 			prefix = stem
@@ -68,14 +121,20 @@ def main():
 		print(f'ERROR: {args.lts_dir_b} is not a directory', file=sys.stderr)
 		sys.exit(1)
 
-	paths_a = find_lts_files(args.lts_dir_a)
-	paths_b = find_lts_files(args.lts_dir_b)
+	ok_aut_prefixes_a = load_ok_aut_prefixes(args.lts_dir_a)
+	ok_aut_prefixes_b = load_ok_aut_prefixes(args.lts_dir_b)
+	aut_prefixes = dict(ok_aut_prefixes_a)
+	aut_prefixes.update(ok_aut_prefixes_b)
+	print(aut_prefixes)
+
+	paths_a = find_lts_files(args.lts_dir_a, ok_aut_prefixes_a)
+	paths_b = find_lts_files(args.lts_dir_b, ok_aut_prefixes_b)
 	paths = sorted(paths_a + paths_b)
 	if not paths:
 		print('No LTS files found in either directory.', file=sys.stderr)
 		sys.exit(1)
 
-	groups = group_by_prefix(paths)
+	groups = group_by_prefix(paths, aut_prefixes)
 	print(
 		f'Found {len(paths)} LTS file(s) in {len(groups)} group(s) '
 		f'({len(paths_a)} in dir A, {len(paths_b)} in dir B).\n'

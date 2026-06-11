@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "merc-py"))
 from merc import Benchmarks, ToolNotFoundError  # type: ignore
 
-RUNS_PER_CONFIG = 1
+RUNS_PER_CONFIG = 5
 
 CACHE_CONFIGS = [
     {"name": "none",  "flags": []},
@@ -58,7 +58,7 @@ def main():
             for cache in CACHE_CONFIGS:
                 flags = [f"--threads={t}", "-v"] + cache["flags"]
                 if args.aut_dir:
-                    aut_file = os.path.join(args.aut_dir, f"{Path(name).stem}_{cache['name']}.aut")
+                    aut_file = os.path.join(args.aut_dir, f"{Path(name).stem}_threads_{t}_{cache['name']}.aut")
                     flags += [aut_file]
                 benchmarks.add(
                     name=name,
