@@ -69,10 +69,21 @@ python3 scripts/benchmark_merc.py <merc_bin_dir> <lps_dir> \
 
 ### `merc-py/merc/create_table.py`
 
-Generates a LaTeX table from NDJSON benchmark output (average time and memory).
+Generates a LaTeX table from JSON or NDJSON benchmark output.
+
+- With one input file, it keeps the old summary behavior.
+- With multiple input files, it merges rows by benchmark name plus the selected merge keys.
+- Each input contributes a `Time (s)` and `Memory (MB)` column for side-by-side comparison.
 
 ```bash
 python3 merc-py/merc/create_table.py results.ndjson
+
+python3 merc-py/merc/create_table.py results-a.ndjson results-b.ndjson \
+	--merge-key threads \
+	--merge-key caching \
+	--label baseline \
+	--label optimized \
+	-o comparison.tex
 ```
 
 ### `merc-py/merc/benchmarks.py`
