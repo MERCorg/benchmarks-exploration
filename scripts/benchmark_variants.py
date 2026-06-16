@@ -17,6 +17,11 @@ CACHE_CONFIGS = [
 
 TOOL_VARIANTS = ["lps2lts", "lps2ltscf", "lps2ltspr"]
 
+TOOL_EXTRA_FLAGS = {
+    "lps2ltscf": ["--control-flow"],
+    "lps2ltspr": ["--project"],
+}
+
 
 def thread_counts(max_threads: int) -> list[int]:
     counts = []
@@ -58,8 +63,9 @@ def main():
         name = str(lps_file.relative_to(args.lps_dir))
         for t in thread_counts(args.max_threads):
             for tool_name, tool_path in tools.items():
-                for cache in CACHE_CONFIGS:
-                    flags = [f"--threads={t}", "-v"] + cache["flags"]
+                cache_configs = [CACHE_CONFIGS[0]] if tool_name == "lps2ltspr" else CACHE_CONFIGS
+                for cache in cache_configs:
+                    flags = [f"--threads={t}", "-v"] + cache["flags"] + TOOL_EXTRA_FLAGS.get(tool_name, [])
                     if args.aut_dir:
                         aut_file = os.path.join(args.aut_dir, f"{Path(name).stem}_{tool_name}_{cache['name']}.aut")
                         flags += [aut_file]
