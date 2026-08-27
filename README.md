@@ -23,7 +23,11 @@ docker run -it --rm benchmarks-exploration
 The benchmarking script is located at `scripts/benchmark.py`. To run the benchmarks, execute the following command from within the container:
 
 ```bash
-python3 scripts/benchmark.py /root/mCRL2/build/stage/bin /root/input/
+python3 /root/scripts/benchmark.py /root/mCRL2/build/stage/bin/ /root/input/ -max-threads=128 -o /root/results/lps2lts.ndjson
+
+python3 /root/scripts/benchmark_variants.py /root/mCRL2-lps2lts/build/stage/bin/ /root/input --max-threads=128 -o /root/results_variants/lps2lts_variants.ndjson
+
+python3 /root/scripts/benchmark.py /root/merc/target/release/ /root/input/ -o /root/results_merc/results.ndjson
 ```
 
 ## Scripts
@@ -48,42 +52,40 @@ Runs `lps2lts` on each `.lps` input and writes benchmark results to NDJSON.
 
 ```bash
 python3 scripts/benchmark.py <mcrl2_bin_dir> <lps_dir> \
-	--output results.ndjson \
-	--max-threads 8 \
-	--aut-dir aut
+	--output results_mcrl2/results.ndjson \
+	--max-threads 128 
 ```
 
 ### `scripts/benchmark_merc.py`
 
 Runs `merc-lps explore-explicit` on each `.lps` input and writes benchmark results to NDJSON.
 
-- Tests caching variants: `none`, `local`, `global`.
+- Tests caching variants: `none`, `local`.
 - Optional: write generated state spaces (`.aut`) with `--aut-dir`.
 
 ```bash
 python3 scripts/benchmark_merc.py <merc_bin_dir> <lps_dir> \
-	--output results_merc.ndjson \
-	--max-threads 8 \
-	--aut-dir aut_merc
+	--output results_merc/results.ndjson \
+	--max-threads 128
 ```
 
-### `merc-py/merc/create_table.py`
+### `scripts/create_plot_exploration.py`
 
-Generates a LaTeX table from JSON or NDJSON benchmark output.
+A concrete instantiation of `create_plot.py` (the scatter-plot counterpart of
+`scripts/create_table_exploration.py`). It compares two tools on the same metric
+with one point per benchmark case, drawn against a dashed `y = x` reference line.
 
-- With one input file, it keeps the old summary behavior.
-- With multiple input files, it merges rows by benchmark name plus the selected merge keys.
-- Each input contributes a `Time (s)` and `Memory (MB)` column for side-by-side comparison.
+- Defaults to `merc-lps` (y-axis) vs `lps2lts` (x-axis) on single-thread time.
+- Select the tools, metric, thread count and caching mode with `--y-tool`,
+  `--x-tool`, `--metric`, `--threads` and `--caching`.
 
 ```bash
-python3 merc-py/merc/create_table.py results.ndjson
+python3 scripts/create_plot_exploration.py
 
-python3 merc-py/merc/create_table.py results-a.ndjson results-b.ndjson \
-	--merge-key threads \
-	--merge-key caching \
-	--label baseline \
-	--label optimized \
-	-o comparison.tex
+python3 scripts/create_plot_exploration.py \
+	--y-tool merc-lps --x-tool lps2ltscf \
+	--metric memory \
+	-o scripts/exploration_scatter.tex
 ```
 
 ### `merc-py/merc/benchmarks.py`
