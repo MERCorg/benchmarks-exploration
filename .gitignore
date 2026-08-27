@@ -1,7 +1,15 @@
 input/
+
 mCRL2/build/
+
 merc/target/
+
 results*
+
 verify*
+
 benchmark*
+
 .venv/
+
+__pycache__
