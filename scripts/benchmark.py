@@ -12,7 +12,8 @@ RUNS_PER_CONFIG = 5
 
 CACHE_CONFIGS = [
     {"name": "none",  "flags": []},
-    {"name": "local", "flags": ["--cached"]},
+    {"name": "local", "flags": ["--project"]},
+    {"name": "enumeration", "flags": ["--cached"]},
 ]
 
 
@@ -56,23 +57,29 @@ def main():
         name = str(lps_file.relative_to(args.lps_dir))
         for t in thread_counts(args.max_threads):
             for cache in CACHE_CONFIGS:
-                flags = [f"--threads={t}", "-v"] + cache["flags"]
-                if args.aut_dir:
-                    aut_file = os.path.join(args.aut_dir, f"{Path(name).stem}_threads_{t}_{cache['name']}.aut")
-                    flags += [aut_file]
-                benchmarks.add(
-                    name=name,
-                    cache_key=f"threads_{t}_{cache['name']}",
-                    tool=lps2lts,
-                    arguments=[str(lps_file)] + flags,
-                    timeout=600,
-                    extra={
-                        "file": name,
-                        "threads": t,
-                        "caching": cache["name"],
-                    },
-                    threads=t
-                )
+                for control_flow in [True, False]:
+                    flags = [f"--threads={t}", "-v"] + cache["flags"]
+                    if args.aut_dir:
+                        aut_file = os.path.join(args.aut_dir, f"{Path(name).stem}_threads_{t}_{cache['name']}.aut")
+                        flags += [aut_file]
+
+                    if control_flow:
+                        flags += ["--control-flow"]
+
+                    benchmarks.add(
+                        name=name,
+                        cache_key=f"threads_{t}_{cache['name']}_control_{control_flow}",
+                        tool=lps2lts,
+                        arguments=[str(lps_file)] + flags,
+                        timeout=600,
+                        extra={
+                            "file": name,
+                            "threads": t,
+                            "caching": cache["name"],
+                            "control_flow": control_flow,
+                        },
+                        threads=t
+                    )
 
     try:
         benchmarks.run(args.output)
