@@ -24,22 +24,12 @@ import argparse
 import sys
 from pathlib import Path
 
-from create_plot import (  # noqa: E402  (path is set up above)
+from merc import (
     AGGREGATORS,
     METRIC_LABELS,
     PlotSeries,
     build_comparison_points,
     render_pgfplots_scatter,
-)
-
-# Reuse the exact loading/tagging logic of the table script so both views stay
-# consistent (same ``_tool`` tags, same lps2ltspr caching adjustment, etc.).
-from create_table_exploration import (  # noqa: E402  (path is set up above)
-    DEFAULT_BASE,
-    DEFAULT_MERC,
-    REPO_ROOT,
-    TOOL_ORDER,
-    load_tagged,
 )
 
 DEFAULT_OUTPUT = REPO_ROOT / "scripts" / "exploration_scatter.tex"
@@ -69,8 +59,7 @@ def main() -> None:
     parser.add_argument("--metric", choices=sorted(METRIC_LABELS), default="time",
                         help="Metric compared on both axes (default: time).")
     parser.add_argument("--threads", type=int, default=1,
-                        help="Thread count to compare at (default: 1). merc-lps is "
-                             "always single-threaded.")
+                        help="Thread count to compare at (default: 1)")
     parser.add_argument("--caching", default="local",
                         help="Caching mode to compare (default: local).")
     parser.add_argument("--aggregate", choices=sorted(AGGREGATORS), default="mean",

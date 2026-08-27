@@ -74,9 +74,8 @@ def main():
                         timeout=600,
                         extra={
                             "file": name,
-                            "threads": t,
                             "caching": cache["name"],
-                            "control_flow": control_flow,
+                            "control-flow": control_flow,
                         },
                         threads=t
                     )

@@ -16,13 +16,11 @@ import argparse
 import sys
 from pathlib import Path
 
-from merc.create_table import (
+from merc import (
     AGGREGATORS,
     Column,
     Row,
-    build_table,
-    load_records,
-    render_latex_table,
+    create_table,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -70,7 +68,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate the benchmarks-exploration LaTeX table."
     )
-    parser.add_argument("--input", "-i", type=Path, required=True,
+    parser.add_argument("--input-lps2lts", type=Path, required=True,
+                        help="NDJSON results for lps2lts.")
+    parser.add_argument("--input-merc", type=Path, required=True,
                         help="NDJSON results for merc-lps.")
     parser.add_argument("--aggregate", choices=sorted(AGGREGATORS), default="mean",
                         help="How to combine values across benchmark cases and runs.")
@@ -80,21 +80,7 @@ def main() -> None:
                         help="Path to the generated LaTeX table.")
     args = parser.parse_args()
 
-    records = load_records(args.input)
-    rows = make_rows(records)
-    columns = make_columns()
-    table_rows = build_table(records, rows, columns, aggregate=AGGREGATORS[args.aggregate])
-
-    # Bold the best (lowest) time and the best (lowest) memory in each row.
-    render_latex_table(
-        args.output,
-        ["Name"],
-        columns,
-        table_rows,
-        compare_key=lambda column: column.path[0],
-        standalone=args.standalone,
-    )
-    print(f"Table written to {args.output} (aggregate: {args.aggregate})")
+    create_table([args.input_lps2lts, args.input_merc], merge_keys=["caching", "threads", "control-flow"], labels=[ "lps2lts", "merc-lps"], output=str(args.output))
 
 
 if __name__ == "__main__":
