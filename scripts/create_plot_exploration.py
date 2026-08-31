@@ -29,10 +29,37 @@ from merc import (
     METRIC_LABELS,
     PlotSeries,
     build_comparison_points,
+    load_records,
     render_pgfplots_scatter,
 )
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# Tool order (matches the two inputs loaded below).
+TOOL_ORDER = ["lps2lts", "merc-lps"]
+
+DEFAULT_BASE = REPO_ROOT / "results_new" / "results_new.ndjson"
+DEFAULT_MERC = REPO_ROOT / "results_merc" / "results.ndjson"
 DEFAULT_OUTPUT = REPO_ROOT / "scripts" / "exploration_scatter.tex"
+
+
+def load_tagged(base: Path, merc: Path) -> list[dict]:
+    """Load the two result sources and tag every record with a ``_tool`` name."""
+    records: list[dict] = []
+
+    for record in load_records(base):
+        tagged = dict(record)
+        tagged["_tool"] = "lps2lts"
+        records.append(tagged)
+
+    for record in load_records(merc):
+        tagged = dict(record)
+        tagged["_tool"] = "merc-lps"
+        # merc-lps has no thread dimension; treat it as the single-thread result.
+        tagged["threads"] = 1
+        records.append(tagged)
+
+    return records
 
 
 def tool_select(tool: str, threads: int, caching: str):
