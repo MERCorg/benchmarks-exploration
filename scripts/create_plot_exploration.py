@@ -38,7 +38,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # Tool order (matches the two inputs loaded below).
 TOOL_ORDER = ["lps2lts", "merc-lps"]
 
-DEFAULT_BASE = REPO_ROOT / "results_new" / "results_new.ndjson"
+DEFAULT_BASE = REPO_ROOT / "results_mcrl2" / "results.ndjson"
 DEFAULT_MERC = REPO_ROOT / "results_merc" / "results.ndjson"
 DEFAULT_OUTPUT = REPO_ROOT / "scripts" / "exploration_scatter.tex"
 
