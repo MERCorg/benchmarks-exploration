@@ -1,0 +1,329 @@
+sort RID = struct Q(rtid: TID) | R(rtid: TID);
+     Label = struct sr(ltid: TID, lrid: RID)?is_sr | fr(ltid: TID, lrid: RID, ldata: Data)?is_fr | sw(ltid: TID, lrid: RID, ldata: Data)?is_sw | fw(ltid: TID, lrid: RID)?is_fw | or(ltid: TID, lrid: RID)?is_or | ow(ltid: TID, lrid: RID)?is_ow | c(ltid: TID)?is_c | nc(ltid: TID)?is_nc;
+     TID = Nat;
+     Data = Nat;
+     Overlapping = TID -> Bool;
+     Status_safe = struct status_safe(stored: Data, next: Data, initial: Data, overlap: Overlapping, readers: Set(TID), writers: Set(TID));
+     Possible_values = TID -> Set(Data);
+     Status_regular = struct status_regular(stored: Data, initial: Data, rpos: Possible_values, curvals: Bag(Data), record: TID -> Data, readers: Set(TID), writers: Set(TID), pending: Set(TID));
+     Status_atomic = struct status_atomic(stored: Data, initial: Data, record: TID -> Data, readers: Set(TID), writers: Set(TID), pending: Set(TID));
+     Enum3 = struct e2_3 | e1_3 | e0_3;
+     Enum4 = struct e3_4 | e2_4 | e1_4 | e0_4;
+     Enum5 = struct e4_5 | e3_5 | e2_5 | e1_5 | e0_5;
+
+map  other: TID -> TID;
+     NUM: Nat;
+     MIN_TID,MAX_TID: TID;
+     valid_tid: TID -> Bool;
+     MIN,MAX,INIT: RID -> Data;
+     valid_data: RID # Data -> Bool;
+     Block: Set(Label);
+     nonblock: Label -> Bool;
+     elimT,elimS,elimI,elimA: Label -> Set(Label);
+     ALL_OVERLAPPING: Overlapping;
+     INIT_Status_safe: Data -> Status_safe;
+     start_reading,finish_reading: Status_safe # TID -> Status_safe;
+     start_writing,finish_writing: Status_safe # TID # Data -> Status_safe;
+     overlapping_write: Status_safe # TID -> Bool;
+     stored_val: Status_safe -> Data;
+     ALL_EMPTY: Possible_values;
+     ALL_INIT: Data -> TID -> Data;
+     add_readers: Possible_values # Set(TID) # Data -> Possible_values;
+     add_readers_step: Possible_values # Set(TID) # TID # Data -> Possible_values;
+     INIT_Status_regular: Data -> Status_regular;
+     start_reading,finish_reading: Status_regular # TID -> Status_regular;
+     pos_val: Status_regular # TID -> Set(Data);
+     start_writing: Status_regular # TID # Data -> Status_regular;
+     finish_writing,order_writing: Status_regular # TID -> Status_regular;
+     INIT_Status_atomic: Data -> Status_atomic;
+     start_reading,order_reading,finish_reading: Status_atomic # TID -> Status_atomic;
+     start_writing: Status_atomic # TID # Data -> Status_atomic;
+     order_writing,finish_writing: Status_atomic # TID -> Status_atomic;
+     C3_: Enum3 # Nat # Nat # Nat -> Nat;
+     C3_1: Enum3 # RID # RID # RID -> RID;
+     C3_2: Enum3 # Pos # Pos # Pos -> Pos;
+     C3_3: Enum3 # Bool # Bool # Bool -> Bool;
+     C4_: Enum4 # Nat # Nat # Nat # Nat -> Nat;
+     C4_1: Enum4 # RID # RID # RID # RID -> RID;
+     C4_2: Enum4 # Pos # Pos # Pos # Pos -> Pos;
+     C4_3: Enum4 # Bool # Bool # Bool # Bool -> Bool;
+     C5_: Enum5 # Nat # Nat # Nat # Nat # Nat -> Nat;
+     C5_1: Enum5 # RID # RID # RID # RID # RID -> RID;
+     C5_2: Enum5 # Pos # Pos # Pos # Pos # Pos -> Pos;
+     C5_3: Enum5 # Bool # Bool # Bool # Bool # Bool -> Bool;
+
+var  rid,x9,y13,y12,y11,x13,y27,y26,y25,y24,x17,y45,y44,y43,y42,y41: RID;
+     tid: TID;
+     d,s,n,i: Data;
+     a: Label;
+     o: Overlapping;
+     rs,ws,st,ps: Set(TID);
+     pv,rp: Possible_values;
+     cv: Bag(Data);
+     rec: TID -> Data;
+     x8,y10,y9,y8,x12,y23,y22,y21,y20,x16,y40,y39,y38,y37,y36: Nat;
+     e2,e3,e4,e5: Enum3;
+     x10,y16,y15,y14,x14,y31,y30,y29,y28,x18,y50,y49,y48,y47,y46: Pos;
+     x11,y19,y18,y17,x15,y35,y34,y33,y32,x19,y55,y54,y53,y52,y51: Bool;
+     e8,e9,e10,e11: Enum4;
+     e13,e14,e15,e16: Enum5;
+eqn  MIN(rid)  =  0;
+     MAX(rid)  =  1;
+     other(0)  =  1;
+     other(1)  =  0;
+     NUM  =  2;
+     Block  =  { a: Label | is_nc(a) };
+     MIN_TID  =  0;
+     MAX_TID  =  Int2Nat(NUM - 1);
+     valid_tid(tid)  =  MIN_TID <= tid && tid <= MAX_TID;
+     valid_data(rid, d)  =  MIN(rid) <= d && d <= MAX(rid);
+     nonblock(a)  =  !(a in Block);
+     elimT(a)  =  { b: Label | ltid(a) == ltid(b) };
+     (!(is_sr(a) || is_sw(a)))  ->  elimS(a)  =  elimT(a);
+     (is_sr(a) || is_sw(a))  ->  elimS(a)  =  elimT(a) + { b: Label | is_sw(b) && lrid(a) == lrid(b) };
+     (!is_sw(a))  ->  elimI(a)  =  elimS(a);
+     (is_sw(a))  ->  elimI(a)  =  elimS(a) + { b: Label | is_sr(b) && lrid(a) == lrid(b) };
+     (!is_sr(a))  ->  elimA(a)  =  elimI(a);
+     (is_sr(a))  ->  elimA(a)  =  elimI(a) + { b: Label | is_sr(b) && lrid(a) == lrid(b) };
+     ALL_OVERLAPPING(tid)  =  true;
+     INIT_Status_safe(s)  =  status_safe(s, s, s, ALL_OVERLAPPING, {}, {});
+     start_reading(status_safe(s, n, i, o, rs, ws), tid)  =  status_safe(s, n, i, o[tid -> ws != {}], rs + {tid}, ws);
+     finish_reading(status_safe(s, n, i, o, rs, ws), tid)  =  status_safe(s, n, i, o[tid -> true], rs - {tid}, ws);
+     (ws == {})  ->  start_writing(status_safe(s, n, i, o, rs, ws), tid, d)  =  status_safe(s, d, i, ALL_OVERLAPPING[tid -> false], rs, ws + {tid});
+     (ws != {})  ->  start_writing(status_safe(s, n, i, o, rs, ws), tid, d)  =  status_safe(s, i, i, ALL_OVERLAPPING, rs, ws + {tid});
+     finish_writing(status_safe(s, n, i, o, rs, ws), tid, d)  =  status_safe(d, i, i, o[tid -> true], rs, ws - {tid});
+     overlapping_write(status_safe(s, n, i, o, rs, ws), tid)  =  o(tid);
+     ALL_EMPTY(tid)  =  {};
+     ALL_INIT(d)(tid)  =  d;
+     add_readers(pv, st, d)  =  add_readers_step(pv, st, MIN_TID, d);
+     (valid_tid(tid) && !(tid in st))  ->  add_readers_step(pv, st, tid, d)  =  add_readers_step(pv, st, tid + 1, d);
+     (valid_tid(tid) && tid in st)  ->  add_readers_step(pv, st, tid, d)  =  add_readers_step(pv[tid -> pv(tid) + {d}], st, tid + 1, d);
+     (!valid_tid(tid))  ->  add_readers_step(pv, st, tid, d)  =  pv;
+     INIT_Status_regular(d)  =  status_regular(d, d, ALL_EMPTY, {:}, ALL_INIT(d), {}, {}, {});
+     start_reading(status_regular(s, i, rp, cv, rec, rs, ws, ps), tid)  =  status_regular(s, i, rp[tid -> Bag2Set(cv) + {s}], cv, rec, rs + {tid}, ws, ps);
+     finish_reading(status_regular(s, i, rp, cv, rec, rs, ws, ps), tid)  =  status_regular(s, i, rp[tid -> {}], cv, rec, rs - {tid}, ws, ps);
+     pos_val(status_regular(s, i, rp, cv, rec, rs, ws, ps), tid)  =  rp(tid);
+     start_writing(status_regular(s, i, rp, cv, rec, rs, ws, ps), tid, d)  =  status_regular(s, i, add_readers(rp, rs, d), cv + {d: 1}, rec[tid -> d], rs, ws + {tid}, ps + {tid});
+     finish_writing(status_regular(s, i, rp, cv, rec, rs, ws, ps), tid)  =  status_regular(s, i, rp, cv - {rec(tid): 1}, rec[tid -> i], rs, ws - {tid}, ps);
+     order_writing(status_regular(s, i, rp, cv, rec, rs, ws, ps), tid)  =  status_regular(rec(tid), i, rp, cv, rec, rs, ws, ps - {tid});
+     INIT_Status_atomic(d)  =  status_atomic(d, d, ALL_INIT(d), {}, {}, {});
+     start_reading(status_atomic(s, i, rec, rs, ws, ps), tid)  =  status_atomic(s, i, rec, rs + {tid}, ws, ps + {tid});
+     order_reading(status_atomic(s, i, rec, rs, ws, ps), tid)  =  status_atomic(s, i, rec[tid -> s], rs, ws, ps - {tid});
+     finish_reading(status_atomic(s, i, rec, rs, ws, ps), tid)  =  status_atomic(s, i, rec[tid -> i], rs - {tid}, ws, ps);
+     start_writing(status_atomic(s, i, rec, rs, ws, ps), tid, d)  =  status_atomic(s, i, rec[tid -> d], rs, ws + {tid}, ps + {tid});
+     order_writing(status_atomic(s, i, rec, rs, ws, ps), tid)  =  status_atomic(rec(tid), i, rec[tid -> i], rs, ws, ps - {tid});
+     finish_writing(status_atomic(s, i, rec, rs, ws, ps), tid)  =  status_atomic(s, i, rec, rs, ws - {tid}, ps);
+     C3_(e2, x8, x8, x8)  =  x8;
+     C3_(e2_3, y10, y9, y8)  =  y10;
+     C3_(e1_3, y10, y9, y8)  =  y9;
+     C3_(e0_3, y10, y9, y8)  =  y8;
+     C3_1(e3, x9, x9, x9)  =  x9;
+     C3_1(e2_3, y13, y12, y11)  =  y13;
+     C3_1(e1_3, y13, y12, y11)  =  y12;
+     C3_1(e0_3, y13, y12, y11)  =  y11;
+     C3_2(e4, x10, x10, x10)  =  x10;
+     C3_2(e2_3, y16, y15, y14)  =  y16;
+     C3_2(e1_3, y16, y15, y14)  =  y15;
+     C3_2(e0_3, y16, y15, y14)  =  y14;
+     C3_3(e5, x11, x11, x11)  =  x11;
+     C3_3(e2_3, y19, y18, y17)  =  y19;
+     C3_3(e1_3, y19, y18, y17)  =  y18;
+     C3_3(e0_3, y19, y18, y17)  =  y17;
+     C4_(e8, x12, x12, x12, x12)  =  x12;
+     C4_(e3_4, y23, y22, y21, y20)  =  y23;
+     C4_(e2_4, y23, y22, y21, y20)  =  y22;
+     C4_(e1_4, y23, y22, y21, y20)  =  y21;
+     C4_(e0_4, y23, y22, y21, y20)  =  y20;
+     C4_1(e9, x13, x13, x13, x13)  =  x13;
+     C4_1(e3_4, y27, y26, y25, y24)  =  y27;
+     C4_1(e2_4, y27, y26, y25, y24)  =  y26;
+     C4_1(e1_4, y27, y26, y25, y24)  =  y25;
+     C4_1(e0_4, y27, y26, y25, y24)  =  y24;
+     C4_2(e10, x14, x14, x14, x14)  =  x14;
+     C4_2(e3_4, y31, y30, y29, y28)  =  y31;
+     C4_2(e2_4, y31, y30, y29, y28)  =  y30;
+     C4_2(e1_4, y31, y30, y29, y28)  =  y29;
+     C4_2(e0_4, y31, y30, y29, y28)  =  y28;
+     C4_3(e11, x15, x15, x15, x15)  =  x15;
+     C4_3(e3_4, y35, y34, y33, y32)  =  y35;
+     C4_3(e2_4, y35, y34, y33, y32)  =  y34;
+     C4_3(e1_4, y35, y34, y33, y32)  =  y33;
+     C4_3(e0_4, y35, y34, y33, y32)  =  y32;
+     C5_(e13, x16, x16, x16, x16, x16)  =  x16;
+     C5_(e4_5, y40, y39, y38, y37, y36)  =  y40;
+     C5_(e3_5, y40, y39, y38, y37, y36)  =  y39;
+     C5_(e2_5, y40, y39, y38, y37, y36)  =  y38;
+     C5_(e1_5, y40, y39, y38, y37, y36)  =  y37;
+     C5_(e0_5, y40, y39, y38, y37, y36)  =  y36;
+     C5_1(e14, x17, x17, x17, x17, x17)  =  x17;
+     C5_1(e4_5, y45, y44, y43, y42, y41)  =  y45;
+     C5_1(e3_5, y45, y44, y43, y42, y41)  =  y44;
+     C5_1(e2_5, y45, y44, y43, y42, y41)  =  y43;
+     C5_1(e1_5, y45, y44, y43, y42, y41)  =  y42;
+     C5_1(e0_5, y45, y44, y43, y42, y41)  =  y41;
+     C5_2(e15, x18, x18, x18, x18, x18)  =  x18;
+     C5_2(e4_5, y50, y49, y48, y47, y46)  =  y50;
+     C5_2(e3_5, y50, y49, y48, y47, y46)  =  y49;
+     C5_2(e2_5, y50, y49, y48, y47, y46)  =  y48;
+     C5_2(e1_5, y50, y49, y48, y47, y46)  =  y47;
+     C5_2(e0_5, y50, y49, y48, y47, y46)  =  y46;
+     C5_3(e16, x19, x19, x19, x19, x19)  =  x19;
+     C5_3(e4_5, y55, y54, y53, y52, y51)  =  y55;
+     C5_3(e3_5, y55, y54, y53, y52, y51)  =  y54;
+     C5_3(e2_5, y55, y54, y53, y52, y51)  =  y53;
+     C5_3(e1_5, y55, y54, y53, y52, y51)  =  y52;
+     C5_3(e0_5, y55, y54, y53, y52, y51)  =  y51;
+
+act  line: Nat # Nat;
+     crit,noncrit: Nat;
+     start_read_s,start_read_r,start_read: Nat # RID;
+     finish_read_s,finish_read_r,finish_read,start_write_s,start_write_r,start_write: Nat # RID # Nat;
+     finish_write_s,finish_write_r,finish_write,order_read,order_write: Nat # RID;
+     label: Label;
+
+glob dc,dc1,dc12,dc13,dc18,dc19,dc2,dc20,dc21,dc22,dc23,dc24,dc25,dc26,dc27,dc28,dc29,dc3,dc30,dc31,dc35,dc36,dc38,dc39,dc4,dc41,dc42,dc43,dc47,dc48,dc49,dc5,dc50,dc51,dc52,dc53,dc54,dc55,dc59,dc6,dc60,dc65,dc66,dc67,dc68,dc69,dc7,dc70,dc71,dc72,dc73,dc74,dc75,dc76,dc77,dc78,dc8,dc82,dc83,dc85,dc86,dc88,dc89,dc90: Nat;
+
+proc P(s1_Thread: Pos, rj_Thread,qi_Thread,ri_Thread: Nat, s_Register_safe,s_Register_safe1: Status_safe, s4_Thread: Pos, rj_Thread1,qi_Thread1,ri_Thread1: Nat, s_Register_safe2,s_Register_safe3: Status_safe) =
+       (s1_Thread == 15) ->
+         label(c(0)) .
+         P(s1_Thread = 16, rj_Thread = dc41, qi_Thread = dc42, ri_Thread = dc43)
+     + (s1_Thread == 11) ->
+         label(nc(0)) .
+         P(s1_Thread = 12, rj_Thread = dc29, qi_Thread = dc30, ri_Thread = dc31)
+     + (s4_Thread == 15) ->
+         label(c(1)) .
+         P(s4_Thread = 16, rj_Thread1 = dc88, qi_Thread1 = dc89, ri_Thread1 = dc90)
+     + (s4_Thread == 11) ->
+         label(nc(1)) .
+         P(s4_Thread = 12, rj_Thread1 = dc76, qi_Thread1 = dc77, ri_Thread1 = dc78)
+     + sum e21_Thread: Enum3,e26_Register_safe: Bool,d_Register_safe8: Nat.
+         ((C3_3(e21_Thread, s4_Thread == 6, s4_Thread == 3, s4_Thread == 1) && if(e26_Register_safe, d_Register_safe8 == 0, true) && if(e26_Register_safe, 1 in writers(s_Register_safe2) && !overlapping_write(s_Register_safe2, 1), (1 in writers(s_Register_safe2) && d_Register_safe8 <= 1) && overlapping_write(s_Register_safe2, 1))) && C3_1(e21_Thread, Q(0), R(0), Q(0)) == Q(1)) ->
+         label(fw(1, Q(1))) .
+         P(s4_Thread = C3_2(e21_Thread, 11, 14, 13), rj_Thread1 = dc50, qi_Thread1 = dc51, ri_Thread1 = dc52, s_Register_safe2 = if(e26_Register_safe, finish_writing(s_Register_safe2, 1, next(s_Register_safe2)), finish_writing(s_Register_safe2, 1, d_Register_safe8)))
+     + sum e21_Thread: Enum3,e28_Register_safe: Bool,d_Register_safe11: Nat.
+         ((C3_3(e21_Thread, s4_Thread == 6, s4_Thread == 3, s4_Thread == 1) && if(e28_Register_safe, d_Register_safe11 == 0, true) && if(e28_Register_safe, 1 in writers(s_Register_safe3) && !overlapping_write(s_Register_safe3, 1), (1 in writers(s_Register_safe3) && d_Register_safe11 <= 1) && overlapping_write(s_Register_safe3, 1))) && C3_1(e21_Thread, Q(0), R(0), Q(0)) == R(1)) ->
+         label(fw(1, R(1))) .
+         P(s4_Thread = C3_2(e21_Thread, 11, 14, 13), rj_Thread1 = dc50, qi_Thread1 = dc51, ri_Thread1 = dc52, s_Register_safe3 = if(e28_Register_safe, finish_writing(s_Register_safe3, 1, next(s_Register_safe3)), finish_writing(s_Register_safe3, 1, d_Register_safe11)))
+     + sum e22_Thread: Enum3.
+         ((C3_3(e22_Thread, s4_Thread == 16, s4_Thread == 12, s4_Thread == 2) && C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2) <= 1 && !(1 in readers(s_Register_safe2) || 1 in writers(s_Register_safe2))) && Q(1) == C3_1(e22_Thread, Q(0), Q(0), R(0))) ->
+         label(sw(1, Q(1), C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2))) .
+         P(s4_Thread = C3_2(e22_Thread, 6, 1, 3), rj_Thread1 = dc53, qi_Thread1 = dc54, ri_Thread1 = dc55, s_Register_safe2 = start_writing(s_Register_safe2, 1, C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2)))
+     + sum e22_Thread: Enum3.
+         ((C3_3(e22_Thread, s4_Thread == 16, s4_Thread == 12, s4_Thread == 2) && C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2) <= 1 && !(1 in readers(s_Register_safe3) || 1 in writers(s_Register_safe3))) && R(1) == C3_1(e22_Thread, Q(0), Q(0), R(0))) ->
+         label(sw(1, R(1), C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2))) .
+         P(s4_Thread = C3_2(e22_Thread, 6, 1, 3), rj_Thread1 = dc53, qi_Thread1 = dc54, ri_Thread1 = dc55, s_Register_safe3 = start_writing(s_Register_safe3, 1, C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2)))
+     + sum e23_Thread: Enum4.
+         ((C4_3(e23_Thread, s4_Thread == 14, s4_Thread == 13, s4_Thread == 5, s4_Thread == 4) && !(1 in readers(s_Register_safe2) || 1 in writers(s_Register_safe2))) && Q(1) == C4_1(e23_Thread, Q(1), R(1), R(1), R(0))) ->
+         label(sr(1, Q(1))) .
+         P(s4_Thread = C4_2(e23_Thread, 10, 7, 8, 9), rj_Thread1 = C4_(e23_Thread, dc85, dc82, rj_Thread1, dc59), qi_Thread1 = C4_(e23_Thread, dc86, dc83, qi_Thread1, qi_Thread1), ri_Thread1 = dc60, s_Register_safe2 = start_reading(s_Register_safe2, 1))
+     + sum e23_Thread: Enum4.
+         ((C4_3(e23_Thread, s4_Thread == 14, s4_Thread == 13, s4_Thread == 5, s4_Thread == 4) && !(1 in readers(s_Register_safe3) || 1 in writers(s_Register_safe3))) && R(1) == C4_1(e23_Thread, Q(1), R(1), R(1), R(0))) ->
+         label(sr(1, R(1))) .
+         P(s4_Thread = C4_2(e23_Thread, 10, 7, 8, 9), rj_Thread1 = C4_(e23_Thread, dc85, dc82, rj_Thread1, dc59), qi_Thread1 = C4_(e23_Thread, dc86, dc83, qi_Thread1, qi_Thread1), ri_Thread1 = dc60, s_Register_safe3 = start_reading(s_Register_safe3, 1))
+     + sum e24_Thread: Enum5,e25_Register_safe: Bool,d_Register_safe7: Nat.
+         ((C5_3(e24_Thread, s4_Thread == 10, s4_Thread == 9, s4_Thread == 8 && !(qi_Thread1 == 0 || !(rj_Thread1 == (if(e25_Register_safe, stored(s_Register_safe2), d_Register_safe7) + 0) mod 2)), s4_Thread == 8 && (qi_Thread1 == 0 || !(rj_Thread1 == (if(e25_Register_safe, stored(s_Register_safe2), d_Register_safe7) + 0) mod 2)), s4_Thread == 7) && if(e25_Register_safe, d_Register_safe7 == 0, true) && if(e25_Register_safe, 1 in readers(s_Register_safe2) && !overlapping_write(s_Register_safe2, 1), (1 in readers(s_Register_safe2) && d_Register_safe7 <= 1) && overlapping_write(s_Register_safe2, 1))) && C5_1(e24_Thread, Q(1), R(0), R(1), R(1), R(1)) == Q(1)) ->
+         label(if(e25_Register_safe, fr(1, Q(1), stored(s_Register_safe2)), fr(1, Q(1), d_Register_safe7))) .
+         P(s4_Thread = C5_2(e24_Thread, 4, 5, 14, 15, 2), rj_Thread1 = C5_(e24_Thread, dc74, if(e25_Register_safe, stored(s_Register_safe2), d_Register_safe7), dc70, dc67, dc65), qi_Thread1 = C5_(e24_Thread, if(e25_Register_safe, stored(s_Register_safe2), d_Register_safe7), qi_Thread1, dc71, dc68, dc66), ri_Thread1 = C5_(e24_Thread, dc75, dc73, dc72, dc69, if(e25_Register_safe, stored(s_Register_safe2), d_Register_safe7)), s_Register_safe2 = finish_reading(s_Register_safe2, 1))
+     + sum e24_Thread: Enum5,e27_Register_safe: Bool,d_Register_safe10: Nat.
+         ((C5_3(e24_Thread, s4_Thread == 10, s4_Thread == 9, s4_Thread == 8 && !(qi_Thread1 == 0 || !(rj_Thread1 == (if(e27_Register_safe, stored(s_Register_safe3), d_Register_safe10) + 0) mod 2)), s4_Thread == 8 && (qi_Thread1 == 0 || !(rj_Thread1 == (if(e27_Register_safe, stored(s_Register_safe3), d_Register_safe10) + 0) mod 2)), s4_Thread == 7) && if(e27_Register_safe, d_Register_safe10 == 0, true) && if(e27_Register_safe, 1 in readers(s_Register_safe3) && !overlapping_write(s_Register_safe3, 1), (1 in readers(s_Register_safe3) && d_Register_safe10 <= 1) && overlapping_write(s_Register_safe3, 1))) && C5_1(e24_Thread, Q(1), R(0), R(1), R(1), R(1)) == R(1)) ->
+         label(if(e27_Register_safe, fr(1, R(1), stored(s_Register_safe3)), fr(1, R(1), d_Register_safe10))) .
+         P(s4_Thread = C5_2(e24_Thread, 4, 5, 14, 15, 2), rj_Thread1 = C5_(e24_Thread, dc74, if(e27_Register_safe, stored(s_Register_safe3), d_Register_safe10), dc70, dc67, dc65), qi_Thread1 = C5_(e24_Thread, if(e27_Register_safe, stored(s_Register_safe3), d_Register_safe10), qi_Thread1, dc71, dc68, dc66), ri_Thread1 = C5_(e24_Thread, dc75, dc73, dc72, dc69, if(e27_Register_safe, stored(s_Register_safe3), d_Register_safe10)), s_Register_safe3 = finish_reading(s_Register_safe3, 1))
+     + sum e22_Thread: Enum3.
+         (((C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2) <= 1 && !(1 in readers(s_Register_safe1) || 1 in writers(s_Register_safe1))) && C3_3(e22_Thread, s4_Thread == 16, s4_Thread == 12, s4_Thread == 2)) && R(0) == C3_1(e22_Thread, Q(0), Q(0), R(0))) ->
+         label(sw(1, R(0), C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2))) .
+         P(s_Register_safe1 = start_writing(s_Register_safe1, 1, C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2)), s4_Thread = C3_2(e22_Thread, 6, 1, 3), rj_Thread1 = dc53, qi_Thread1 = dc54, ri_Thread1 = dc55)
+     + sum e23_Thread: Enum4.
+         ((!(1 in readers(s_Register_safe1) || 1 in writers(s_Register_safe1)) && C4_3(e23_Thread, s4_Thread == 14, s4_Thread == 13, s4_Thread == 5, s4_Thread == 4)) && R(0) == C4_1(e23_Thread, Q(1), R(1), R(1), R(0))) ->
+         label(sr(1, R(0))) .
+         P(s_Register_safe1 = start_reading(s_Register_safe1, 1), s4_Thread = C4_2(e23_Thread, 10, 7, 8, 9), rj_Thread1 = C4_(e23_Thread, dc85, dc82, rj_Thread1, dc59), qi_Thread1 = C4_(e23_Thread, dc86, dc83, qi_Thread1, qi_Thread1), ri_Thread1 = dc60)
+     + sum e19_Register_safe: Bool,d_Register_safe4: Nat,e24_Thread: Enum5.
+         (((if(e19_Register_safe, d_Register_safe4 == 0, true) && if(e19_Register_safe, 1 in readers(s_Register_safe1) && !overlapping_write(s_Register_safe1, 1), (1 in readers(s_Register_safe1) && d_Register_safe4 <= 1) && overlapping_write(s_Register_safe1, 1))) && C5_3(e24_Thread, s4_Thread == 10, s4_Thread == 9, s4_Thread == 8 && !(qi_Thread1 == 0 || !(rj_Thread1 == (if(e19_Register_safe, stored(s_Register_safe1), d_Register_safe4) + 0) mod 2)), s4_Thread == 8 && (qi_Thread1 == 0 || !(rj_Thread1 == (if(e19_Register_safe, stored(s_Register_safe1), d_Register_safe4) + 0) mod 2)), s4_Thread == 7)) && C5_1(e24_Thread, Q(1), R(0), R(1), R(1), R(1)) == R(0)) ->
+         label(if(e19_Register_safe, fr(1, R(0), stored(s_Register_safe1)), fr(1, R(0), d_Register_safe4))) .
+         P(s_Register_safe1 = finish_reading(s_Register_safe1, 1), s4_Thread = C5_2(e24_Thread, 4, 5, 14, 15, 2), rj_Thread1 = C5_(e24_Thread, dc74, if(e19_Register_safe, stored(s_Register_safe1), d_Register_safe4), dc70, dc67, dc65), qi_Thread1 = C5_(e24_Thread, if(e19_Register_safe, stored(s_Register_safe1), d_Register_safe4), qi_Thread1, dc71, dc68, dc66), ri_Thread1 = C5_(e24_Thread, dc75, dc73, dc72, dc69, if(e19_Register_safe, stored(s_Register_safe1), d_Register_safe4)))
+     + sum e20_Register_safe: Bool,d_Register_safe5: Nat,e21_Thread: Enum3.
+         (((if(e20_Register_safe, d_Register_safe5 == 0, true) && if(e20_Register_safe, 1 in writers(s_Register_safe1) && !overlapping_write(s_Register_safe1, 1), (1 in writers(s_Register_safe1) && d_Register_safe5 <= 1) && overlapping_write(s_Register_safe1, 1))) && C3_3(e21_Thread, s4_Thread == 6, s4_Thread == 3, s4_Thread == 1)) && C3_1(e21_Thread, Q(0), R(0), Q(0)) == R(0)) ->
+         label(fw(1, R(0))) .
+         P(s_Register_safe1 = if(e20_Register_safe, finish_writing(s_Register_safe1, 1, next(s_Register_safe1)), finish_writing(s_Register_safe1, 1, d_Register_safe5)), s4_Thread = C3_2(e21_Thread, 11, 14, 13), rj_Thread1 = dc50, qi_Thread1 = dc51, ri_Thread1 = dc52)
+     + sum e22_Thread: Enum3.
+         (((C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2) <= 1 && !(1 in readers(s_Register_safe) || 1 in writers(s_Register_safe))) && C3_3(e22_Thread, s4_Thread == 16, s4_Thread == 12, s4_Thread == 2)) && Q(0) == C3_1(e22_Thread, Q(0), Q(0), R(0))) ->
+         label(sw(1, Q(0), C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2))) .
+         P(s_Register_safe = start_writing(s_Register_safe, 1, C3_(e22_Thread, 0, 1, (ri_Thread1 + 0) mod 2)), s4_Thread = C3_2(e22_Thread, 6, 1, 3), rj_Thread1 = dc53, qi_Thread1 = dc54, ri_Thread1 = dc55)
+     + sum e23_Thread: Enum4.
+         ((!(1 in readers(s_Register_safe) || 1 in writers(s_Register_safe)) && C4_3(e23_Thread, s4_Thread == 14, s4_Thread == 13, s4_Thread == 5, s4_Thread == 4)) && Q(0) == C4_1(e23_Thread, Q(1), R(1), R(1), R(0))) ->
+         label(sr(1, Q(0))) .
+         P(s_Register_safe = start_reading(s_Register_safe, 1), s4_Thread = C4_2(e23_Thread, 10, 7, 8, 9), rj_Thread1 = C4_(e23_Thread, dc85, dc82, rj_Thread1, dc59), qi_Thread1 = C4_(e23_Thread, dc86, dc83, qi_Thread1, qi_Thread1), ri_Thread1 = dc60)
+     + sum e17_Register_safe: Bool,d_Register_safe1: Nat,e24_Thread: Enum5.
+         (((if(e17_Register_safe, d_Register_safe1 == 0, true) && if(e17_Register_safe, 1 in readers(s_Register_safe) && !overlapping_write(s_Register_safe, 1), (1 in readers(s_Register_safe) && d_Register_safe1 <= 1) && overlapping_write(s_Register_safe, 1))) && C5_3(e24_Thread, s4_Thread == 10, s4_Thread == 9, s4_Thread == 8 && !(qi_Thread1 == 0 || !(rj_Thread1 == (if(e17_Register_safe, stored(s_Register_safe), d_Register_safe1) + 0) mod 2)), s4_Thread == 8 && (qi_Thread1 == 0 || !(rj_Thread1 == (if(e17_Register_safe, stored(s_Register_safe), d_Register_safe1) + 0) mod 2)), s4_Thread == 7)) && C5_1(e24_Thread, Q(1), R(0), R(1), R(1), R(1)) == Q(0)) ->
+         label(if(e17_Register_safe, fr(1, Q(0), stored(s_Register_safe)), fr(1, Q(0), d_Register_safe1))) .
+         P(s_Register_safe = finish_reading(s_Register_safe, 1), s4_Thread = C5_2(e24_Thread, 4, 5, 14, 15, 2), rj_Thread1 = C5_(e24_Thread, dc74, if(e17_Register_safe, stored(s_Register_safe), d_Register_safe1), dc70, dc67, dc65), qi_Thread1 = C5_(e24_Thread, if(e17_Register_safe, stored(s_Register_safe), d_Register_safe1), qi_Thread1, dc71, dc68, dc66), ri_Thread1 = C5_(e24_Thread, dc75, dc73, dc72, dc69, if(e17_Register_safe, stored(s_Register_safe), d_Register_safe1)))
+     + sum e18_Register_safe: Bool,d_Register_safe2: Nat,e21_Thread: Enum3.
+         (((if(e18_Register_safe, d_Register_safe2 == 0, true) && if(e18_Register_safe, 1 in writers(s_Register_safe) && !overlapping_write(s_Register_safe, 1), (1 in writers(s_Register_safe) && d_Register_safe2 <= 1) && overlapping_write(s_Register_safe, 1))) && C3_3(e21_Thread, s4_Thread == 6, s4_Thread == 3, s4_Thread == 1)) && C3_1(e21_Thread, Q(0), R(0), Q(0)) == Q(0)) ->
+         label(fw(1, Q(0))) .
+         P(s_Register_safe = if(e18_Register_safe, finish_writing(s_Register_safe, 1, next(s_Register_safe)), finish_writing(s_Register_safe, 1, d_Register_safe2)), s4_Thread = C3_2(e21_Thread, 11, 14, 13), rj_Thread1 = dc50, qi_Thread1 = dc51, ri_Thread1 = dc52)
+     + sum e1_Thread: Enum3,e18_Register_safe: Bool,d_Register_safe2: Nat.
+         ((C3_3(e1_Thread, s1_Thread == 6, s1_Thread == 3, s1_Thread == 1) && if(e18_Register_safe, d_Register_safe2 == 0, true) && if(e18_Register_safe, 0 in writers(s_Register_safe) && !overlapping_write(s_Register_safe, 0), (0 in writers(s_Register_safe) && d_Register_safe2 <= 1) && overlapping_write(s_Register_safe, 0))) && C3_1(e1_Thread, Q(1), R(1), Q(1)) == Q(0)) ->
+         label(fw(0, Q(0))) .
+         P(s1_Thread = C3_2(e1_Thread, 11, 14, 13), rj_Thread = dc3, qi_Thread = dc4, ri_Thread = dc5, s_Register_safe = if(e18_Register_safe, finish_writing(s_Register_safe, 0, next(s_Register_safe)), finish_writing(s_Register_safe, 0, d_Register_safe2)))
+     + sum e1_Thread: Enum3,e20_Register_safe: Bool,d_Register_safe5: Nat.
+         ((C3_3(e1_Thread, s1_Thread == 6, s1_Thread == 3, s1_Thread == 1) && if(e20_Register_safe, d_Register_safe5 == 0, true) && if(e20_Register_safe, 0 in writers(s_Register_safe1) && !overlapping_write(s_Register_safe1, 0), (0 in writers(s_Register_safe1) && d_Register_safe5 <= 1) && overlapping_write(s_Register_safe1, 0))) && C3_1(e1_Thread, Q(1), R(1), Q(1)) == R(0)) ->
+         label(fw(0, R(0))) .
+         P(s1_Thread = C3_2(e1_Thread, 11, 14, 13), rj_Thread = dc3, qi_Thread = dc4, ri_Thread = dc5, s_Register_safe1 = if(e20_Register_safe, finish_writing(s_Register_safe1, 0, next(s_Register_safe1)), finish_writing(s_Register_safe1, 0, d_Register_safe5)))
+     + sum e1_Thread: Enum3,e26_Register_safe: Bool,d_Register_safe8: Nat.
+         ((C3_3(e1_Thread, s1_Thread == 6, s1_Thread == 3, s1_Thread == 1) && if(e26_Register_safe, d_Register_safe8 == 0, true) && if(e26_Register_safe, 0 in writers(s_Register_safe2) && !overlapping_write(s_Register_safe2, 0), (0 in writers(s_Register_safe2) && d_Register_safe8 <= 1) && overlapping_write(s_Register_safe2, 0))) && C3_1(e1_Thread, Q(1), R(1), Q(1)) == Q(1)) ->
+         label(fw(0, Q(1))) .
+         P(s1_Thread = C3_2(e1_Thread, 11, 14, 13), rj_Thread = dc3, qi_Thread = dc4, ri_Thread = dc5, s_Register_safe2 = if(e26_Register_safe, finish_writing(s_Register_safe2, 0, next(s_Register_safe2)), finish_writing(s_Register_safe2, 0, d_Register_safe8)))
+     + sum e1_Thread: Enum3,e28_Register_safe: Bool,d_Register_safe11: Nat.
+         ((C3_3(e1_Thread, s1_Thread == 6, s1_Thread == 3, s1_Thread == 1) && if(e28_Register_safe, d_Register_safe11 == 0, true) && if(e28_Register_safe, 0 in writers(s_Register_safe3) && !overlapping_write(s_Register_safe3, 0), (0 in writers(s_Register_safe3) && d_Register_safe11 <= 1) && overlapping_write(s_Register_safe3, 0))) && C3_1(e1_Thread, Q(1), R(1), Q(1)) == R(1)) ->
+         label(fw(0, R(1))) .
+         P(s1_Thread = C3_2(e1_Thread, 11, 14, 13), rj_Thread = dc3, qi_Thread = dc4, ri_Thread = dc5, s_Register_safe3 = if(e28_Register_safe, finish_writing(s_Register_safe3, 0, next(s_Register_safe3)), finish_writing(s_Register_safe3, 0, d_Register_safe11)))
+     + sum e6_Thread: Enum3.
+         ((C3_3(e6_Thread, s1_Thread == 16, s1_Thread == 12, s1_Thread == 2) && C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2) <= 1 && !(0 in readers(s_Register_safe) || 0 in writers(s_Register_safe))) && Q(0) == C3_1(e6_Thread, Q(1), Q(1), R(1))) ->
+         label(sw(0, Q(0), C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2))) .
+         P(s1_Thread = C3_2(e6_Thread, 6, 1, 3), rj_Thread = dc6, qi_Thread = dc7, ri_Thread = dc8, s_Register_safe = start_writing(s_Register_safe, 0, C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2)))
+     + sum e6_Thread: Enum3.
+         ((C3_3(e6_Thread, s1_Thread == 16, s1_Thread == 12, s1_Thread == 2) && C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2) <= 1 && !(0 in readers(s_Register_safe1) || 0 in writers(s_Register_safe1))) && R(0) == C3_1(e6_Thread, Q(1), Q(1), R(1))) ->
+         label(sw(0, R(0), C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2))) .
+         P(s1_Thread = C3_2(e6_Thread, 6, 1, 3), rj_Thread = dc6, qi_Thread = dc7, ri_Thread = dc8, s_Register_safe1 = start_writing(s_Register_safe1, 0, C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2)))
+     + sum e6_Thread: Enum3.
+         ((C3_3(e6_Thread, s1_Thread == 16, s1_Thread == 12, s1_Thread == 2) && C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2) <= 1 && !(0 in readers(s_Register_safe2) || 0 in writers(s_Register_safe2))) && Q(1) == C3_1(e6_Thread, Q(1), Q(1), R(1))) ->
+         label(sw(0, Q(1), C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2))) .
+         P(s1_Thread = C3_2(e6_Thread, 6, 1, 3), rj_Thread = dc6, qi_Thread = dc7, ri_Thread = dc8, s_Register_safe2 = start_writing(s_Register_safe2, 0, C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2)))
+     + sum e6_Thread: Enum3.
+         ((C3_3(e6_Thread, s1_Thread == 16, s1_Thread == 12, s1_Thread == 2) && C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2) <= 1 && !(0 in readers(s_Register_safe3) || 0 in writers(s_Register_safe3))) && R(1) == C3_1(e6_Thread, Q(1), Q(1), R(1))) ->
+         label(sw(0, R(1), C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2))) .
+         P(s1_Thread = C3_2(e6_Thread, 6, 1, 3), rj_Thread = dc6, qi_Thread = dc7, ri_Thread = dc8, s_Register_safe3 = start_writing(s_Register_safe3, 0, C3_(e6_Thread, 0, 1, (ri_Thread + 1) mod 2)))
+     + sum e7_Thread: Enum4.
+         ((C4_3(e7_Thread, s1_Thread == 14, s1_Thread == 13, s1_Thread == 5, s1_Thread == 4) && !(0 in readers(s_Register_safe) || 0 in writers(s_Register_safe))) && Q(0) == C4_1(e7_Thread, Q(0), R(0), R(0), R(1))) ->
+         label(sr(0, Q(0))) .
+         P(s1_Thread = C4_2(e7_Thread, 10, 7, 8, 9), rj_Thread = C4_(e7_Thread, dc38, dc35, rj_Thread, dc12), qi_Thread = C4_(e7_Thread, dc39, dc36, qi_Thread, qi_Thread), ri_Thread = dc13, s_Register_safe = start_reading(s_Register_safe, 0))
+     + sum e7_Thread: Enum4.
+         ((C4_3(e7_Thread, s1_Thread == 14, s1_Thread == 13, s1_Thread == 5, s1_Thread == 4) && !(0 in readers(s_Register_safe1) || 0 in writers(s_Register_safe1))) && R(0) == C4_1(e7_Thread, Q(0), R(0), R(0), R(1))) ->
+         label(sr(0, R(0))) .
+         P(s1_Thread = C4_2(e7_Thread, 10, 7, 8, 9), rj_Thread = C4_(e7_Thread, dc38, dc35, rj_Thread, dc12), qi_Thread = C4_(e7_Thread, dc39, dc36, qi_Thread, qi_Thread), ri_Thread = dc13, s_Register_safe1 = start_reading(s_Register_safe1, 0))
+     + sum e7_Thread: Enum4.
+         ((C4_3(e7_Thread, s1_Thread == 14, s1_Thread == 13, s1_Thread == 5, s1_Thread == 4) && !(0 in readers(s_Register_safe2) || 0 in writers(s_Register_safe2))) && Q(1) == C4_1(e7_Thread, Q(0), R(0), R(0), R(1))) ->
+         label(sr(0, Q(1))) .
+         P(s1_Thread = C4_2(e7_Thread, 10, 7, 8, 9), rj_Thread = C4_(e7_Thread, dc38, dc35, rj_Thread, dc12), qi_Thread = C4_(e7_Thread, dc39, dc36, qi_Thread, qi_Thread), ri_Thread = dc13, s_Register_safe2 = start_reading(s_Register_safe2, 0))
+     + sum e7_Thread: Enum4.
+         ((C4_3(e7_Thread, s1_Thread == 14, s1_Thread == 13, s1_Thread == 5, s1_Thread == 4) && !(0 in readers(s_Register_safe3) || 0 in writers(s_Register_safe3))) && R(1) == C4_1(e7_Thread, Q(0), R(0), R(0), R(1))) ->
+         label(sr(0, R(1))) .
+         P(s1_Thread = C4_2(e7_Thread, 10, 7, 8, 9), rj_Thread = C4_(e7_Thread, dc38, dc35, rj_Thread, dc12), qi_Thread = C4_(e7_Thread, dc39, dc36, qi_Thread, qi_Thread), ri_Thread = dc13, s_Register_safe3 = start_reading(s_Register_safe3, 0))
+     + sum e12_Thread: Enum5,e17_Register_safe: Bool,d_Register_safe1: Nat.
+         ((C5_3(e12_Thread, s1_Thread == 10, s1_Thread == 9, s1_Thread == 8 && !(qi_Thread == 0 || !(rj_Thread == (if(e17_Register_safe, stored(s_Register_safe), d_Register_safe1) + 1) mod 2)), s1_Thread == 8 && (qi_Thread == 0 || !(rj_Thread == (if(e17_Register_safe, stored(s_Register_safe), d_Register_safe1) + 1) mod 2)), s1_Thread == 7) && if(e17_Register_safe, d_Register_safe1 == 0, true) && if(e17_Register_safe, 0 in readers(s_Register_safe) && !overlapping_write(s_Register_safe, 0), (0 in readers(s_Register_safe) && d_Register_safe1 <= 1) && overlapping_write(s_Register_safe, 0))) && C5_1(e12_Thread, Q(0), R(1), R(0), R(0), R(0)) == Q(0)) ->
+         label(if(e17_Register_safe, fr(0, Q(0), stored(s_Register_safe)), fr(0, Q(0), d_Register_safe1))) .
+         P(s1_Thread = C5_2(e12_Thread, 4, 5, 14, 15, 2), rj_Thread = C5_(e12_Thread, dc27, if(e17_Register_safe, stored(s_Register_safe), d_Register_safe1), dc23, dc20, dc18), qi_Thread = C5_(e12_Thread, if(e17_Register_safe, stored(s_Register_safe), d_Register_safe1), qi_Thread, dc24, dc21, dc19), ri_Thread = C5_(e12_Thread, dc28, dc26, dc25, dc22, if(e17_Register_safe, stored(s_Register_safe), d_Register_safe1)), s_Register_safe = finish_reading(s_Register_safe, 0))
+     + sum e12_Thread: Enum5,e19_Register_safe: Bool,d_Register_safe4: Nat.
+         ((C5_3(e12_Thread, s1_Thread == 10, s1_Thread == 9, s1_Thread == 8 && !(qi_Thread == 0 || !(rj_Thread == (if(e19_Register_safe, stored(s_Register_safe1), d_Register_safe4) + 1) mod 2)), s1_Thread == 8 && (qi_Thread == 0 || !(rj_Thread == (if(e19_Register_safe, stored(s_Register_safe1), d_Register_safe4) + 1) mod 2)), s1_Thread == 7) && if(e19_Register_safe, d_Register_safe4 == 0, true) && if(e19_Register_safe, 0 in readers(s_Register_safe1) && !overlapping_write(s_Register_safe1, 0), (0 in readers(s_Register_safe1) && d_Register_safe4 <= 1) && overlapping_write(s_Register_safe1, 0))) && C5_1(e12_Thread, Q(0), R(1), R(0), R(0), R(0)) == R(0)) ->
+         label(if(e19_Register_safe, fr(0, R(0), stored(s_Register_safe1)), fr(0, R(0), d_Register_safe4))) .
+         P(s1_Thread = C5_2(e12_Thread, 4, 5, 14, 15, 2), rj_Thread = C5_(e12_Thread, dc27, if(e19_Register_safe, stored(s_Register_safe1), d_Register_safe4), dc23, dc20, dc18), qi_Thread = C5_(e12_Thread, if(e19_Register_safe, stored(s_Register_safe1), d_Register_safe4), qi_Thread, dc24, dc21, dc19), ri_Thread = C5_(e12_Thread, dc28, dc26, dc25, dc22, if(e19_Register_safe, stored(s_Register_safe1), d_Register_safe4)), s_Register_safe1 = finish_reading(s_Register_safe1, 0))
+     + sum e12_Thread: Enum5,e25_Register_safe: Bool,d_Register_safe7: Nat.
+         ((C5_3(e12_Thread, s1_Thread == 10, s1_Thread == 9, s1_Thread == 8 && !(qi_Thread == 0 || !(rj_Thread == (if(e25_Register_safe, stored(s_Register_safe2), d_Register_safe7) + 1) mod 2)), s1_Thread == 8 && (qi_Thread == 0 || !(rj_Thread == (if(e25_Register_safe, stored(s_Register_safe2), d_Register_safe7) + 1) mod 2)), s1_Thread == 7) && if(e25_Register_safe, d_Register_safe7 == 0, true) && if(e25_Register_safe, 0 in readers(s_Register_safe2) && !overlapping_write(s_Register_safe2, 0), (0 in readers(s_Register_safe2) && d_Register_safe7 <= 1) && overlapping_write(s_Register_safe2, 0))) && C5_1(e12_Thread, Q(0), R(1), R(0), R(0), R(0)) == Q(1)) ->
+         label(if(e25_Register_safe, fr(0, Q(1), stored(s_Register_safe2)), fr(0, Q(1), d_Register_safe7))) .
+         P(s1_Thread = C5_2(e12_Thread, 4, 5, 14, 15, 2), rj_Thread = C5_(e12_Thread, dc27, if(e25_Register_safe, stored(s_Register_safe2), d_Register_safe7), dc23, dc20, dc18), qi_Thread = C5_(e12_Thread, if(e25_Register_safe, stored(s_Register_safe2), d_Register_safe7), qi_Thread, dc24, dc21, dc19), ri_Thread = C5_(e12_Thread, dc28, dc26, dc25, dc22, if(e25_Register_safe, stored(s_Register_safe2), d_Register_safe7)), s_Register_safe2 = finish_reading(s_Register_safe2, 0))
+     + sum e12_Thread: Enum5,e27_Register_safe: Bool,d_Register_safe10: Nat.
+         ((C5_3(e12_Thread, s1_Thread == 10, s1_Thread == 9, s1_Thread == 8 && !(qi_Thread == 0 || !(rj_Thread == (if(e27_Register_safe, stored(s_Register_safe3), d_Register_safe10) + 1) mod 2)), s1_Thread == 8 && (qi_Thread == 0 || !(rj_Thread == (if(e27_Register_safe, stored(s_Register_safe3), d_Register_safe10) + 1) mod 2)), s1_Thread == 7) && if(e27_Register_safe, d_Register_safe10 == 0, true) && if(e27_Register_safe, 0 in readers(s_Register_safe3) && !overlapping_write(s_Register_safe3, 0), (0 in readers(s_Register_safe3) && d_Register_safe10 <= 1) && overlapping_write(s_Register_safe3, 0))) && C5_1(e12_Thread, Q(0), R(1), R(0), R(0), R(0)) == R(1)) ->
+         label(if(e27_Register_safe, fr(0, R(1), stored(s_Register_safe3)), fr(0, R(1), d_Register_safe10))) .
+         P(s1_Thread = C5_2(e12_Thread, 4, 5, 14, 15, 2), rj_Thread = C5_(e12_Thread, dc27, if(e27_Register_safe, stored(s_Register_safe3), d_Register_safe10), dc23, dc20, dc18), qi_Thread = C5_(e12_Thread, if(e27_Register_safe, stored(s_Register_safe3), d_Register_safe10), qi_Thread, dc24, dc21, dc19), ri_Thread = C5_(e12_Thread, dc28, dc26, dc25, dc22, if(e27_Register_safe, stored(s_Register_safe3), d_Register_safe10)), s_Register_safe3 = finish_reading(s_Register_safe3, 0))
+     + delta;
+
+init P(11, dc, dc1, dc2, status_safe(0, 0, 0, ALL_OVERLAPPING, {}, {}), status_safe(0, 0, 0, ALL_OVERLAPPING, {}, {}), 11, dc47, dc48, dc49, status_safe(0, 0, 0, ALL_OVERLAPPING, {}, {}), status_safe(0, 0, 0, ALL_OVERLAPPING, {}, {}));

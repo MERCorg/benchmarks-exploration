@@ -1,0 +1,79 @@
+sort Position = struct Black | White | Empty;
+     Direction = struct Up | Right | Down | Left;
+     Row = List(Position);
+     Board = List(Row);
+
+map  N,M: Pos;
+     At: Pos # Pos # Board -> Position;
+     At: Pos # Pos # Direction # Board -> Position;
+     At: Pos # Row -> Position;
+     Put: Position # Pos # Pos # Board -> Board;
+     Put: Position # Pos # Pos # Direction # Board -> Board;
+     Put: Position # Pos # Row -> Row;
+     CanMove: Pos # Pos # Board -> Bool;
+     PossibleMove: Pos # Pos # Direction # Board -> Bool;
+     Xchange,Ychange: Pos # Direction -> Pos;
+
+var  b: Board;
+     r: Row;
+     p,p': Position;
+     x,y: Pos;
+eqn  N  =  5;
+     M  =  5;
+     At(x, y, Up, b)  =  At(x, y + 1, b);
+     At(x, y, Right, b)  =  At(x + 1, y, b);
+     (y > 1)  ->  At(x, y, Down, b)  =  At(x, Int2Pos(y - 1), b);
+     (y == 1)  ->  At(x, y, Down, b)  =  Empty;
+     (x > 1)  ->  At(x, y, Left, b)  =  At(Int2Pos(x - 1), y, b);
+     (x == 1)  ->  At(x, y, Left, b)  =  Empty;
+     At(x, y, [])  =  Empty;
+     (y == 1)  ->  At(x, y, r |> b)  =  At(x, r);
+     (y > M)  ->  At(x, y, b)  =  Empty;
+     (1 < y && y <= M)  ->  At(x, y, r |> b)  =  At(x, Int2Pos(y - 1), b);
+     At(x, [])  =  Empty;
+     (x == 1)  ->  At(x, p |> r)  =  p;
+     (x > N)  ->  At(x, p |> r)  =  Empty;
+     (1 < x && x <= N)  ->  At(x, p |> r)  =  At(Int2Pos(x - 1), r);
+     Put(p, x, y, Up, b)  =  Put(p, x, y + 1, b);
+     Put(p, x, y, Right, b)  =  Put(p, x + 1, y, b);
+     (y > 1)  ->  Put(p, x, y, Down, b)  =  Put(p, x, Int2Pos(y - 1), b);
+     (x > 1)  ->  Put(p, x, y, Left, b)  =  Put(p, Int2Pos(x - 1), y, b);
+     (y == 1)  ->  Put(p, x, y, r |> b)  =  Put(p, x, r) |> b;
+     (y > 1)  ->  Put(p, x, y, r |> b)  =  r |> Put(p, x, Int2Pos(y - 1), b);
+     (x == 1)  ->  Put(p, x, p' |> r)  =  p |> r;
+     (x > 1)  ->  Put(p, x, p' |> r)  =  p' |> Put(p, Int2Pos(x - 1), r);
+     PossibleMove(x, y, Up, b)  =  y + 1 <= M && At(x, y, Up, b) == Empty;
+     PossibleMove(x, y, Right, b)  =  x + 1 <= N && At(x, y, Right, b) == Empty;
+     PossibleMove(x, y, Down, b)  =  y > 1 && At(x, y, Down, b) == Empty;
+     PossibleMove(x, y, Left, b)  =  x > 1 && At(x, y, Left, b) == Empty;
+     CanMove(x, y, b)  =  PossibleMove(x, y, Up, b) || PossibleMove(x, y, Right, b) || PossibleMove(x, y, Down, b) || PossibleMove(x, y, Left, b);
+     Xchange(x, Up)  =  x;
+     Xchange(x, Right)  =  x + 1;
+     Xchange(x, Down)  =  x;
+     Xchange(x, Left)  =  Int2Pos(x - 1);
+     Ychange(y, Up)  =  y + 1;
+     Ychange(y, Right)  =  y;
+     Ychange(y, Down)  =  Int2Pos(y - 1);
+     Ychange(y, Left)  =  y;
+
+act  WhiteMove,BlackMove: Pos # Pos # Direction;
+     WhiteWins,BlackWins;
+
+proc P(xblack_Snake,yblack_Snake,xwhite_Snake,ywhite_Snake: Pos, b_Snake: List(List(Position)), WhiteMoves_Snake: Bool) =
+       (!WhiteMoves_Snake && !(yblack_Snake + 1 <= 5 && At(xblack_Snake, yblack_Snake + 1, b_Snake) == Empty || xblack_Snake + 1 <= 5 && At(xblack_Snake + 1, yblack_Snake, b_Snake) == Empty || 1 < yblack_Snake && At(xblack_Snake, yblack_Snake, Down, b_Snake) == Empty || 1 < xblack_Snake && At(xblack_Snake, yblack_Snake, Left, b_Snake) == Empty)) ->
+         WhiteWins .
+         P()
+     + (WhiteMoves_Snake && !(ywhite_Snake + 1 <= 5 && At(xwhite_Snake, ywhite_Snake + 1, b_Snake) == Empty || xwhite_Snake + 1 <= 5 && At(xwhite_Snake + 1, ywhite_Snake, b_Snake) == Empty || 1 < ywhite_Snake && At(xwhite_Snake, ywhite_Snake, Down, b_Snake) == Empty || 1 < xwhite_Snake && At(xwhite_Snake, ywhite_Snake, Left, b_Snake) == Empty)) ->
+         BlackWins .
+         P()
+     + sum dir_Snake: Direction.
+         (!WhiteMoves_Snake && PossibleMove(xblack_Snake, yblack_Snake, dir_Snake, b_Snake)) ->
+         BlackMove(xwhite_Snake, ywhite_Snake, dir_Snake) .
+         P(xblack_Snake = Xchange(xblack_Snake, dir_Snake), yblack_Snake = Ychange(yblack_Snake, dir_Snake), b_Snake = Put(Black, xblack_Snake, yblack_Snake, dir_Snake, b_Snake), WhiteMoves_Snake = true)
+     + sum dir_Snake1: Direction.
+         (WhiteMoves_Snake && PossibleMove(xwhite_Snake, ywhite_Snake, dir_Snake1, b_Snake)) ->
+         WhiteMove(xwhite_Snake, ywhite_Snake, dir_Snake1) .
+         P(xwhite_Snake = Xchange(xwhite_Snake, dir_Snake1), ywhite_Snake = Ychange(ywhite_Snake, dir_Snake1), b_Snake = Put(White, xwhite_Snake, ywhite_Snake, dir_Snake1, b_Snake), WhiteMoves_Snake = false)
+     + delta;
+
+init P(3, 1, 3, 5, [[Empty, Empty, Black, Empty, Empty], [Empty, Empty, Empty, Empty, Empty], [Empty, Empty, Empty, Empty, Empty], [Empty, Empty, Empty, Empty, Empty], [Empty, Empty, White, Empty, Empty]], false);

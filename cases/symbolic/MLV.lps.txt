@@ -1,0 +1,1086 @@
+sort SensorId = struct GasBlenderPressure | FlowIndicator1 | FlowIndicator2 | InPressure | ExpPressure | Oxygen;
+     SensorState = struct Working | Error | sFaulty;
+     BreathingPhase = struct Inspiration | InspirationPause | RecruitmentManoever | Expiration | ExpirationPause | ApneaTriggerWindow;
+     ValveId = struct In | Out | GasBlenderFlow | PEEPvalve;
+     ValveState = struct Open | Closed | Faulty | At?isAt;
+     AlarmLevels = struct Low | Medium | High;
+     OperationMode = struct Stop?IsStop | StartUp?IsStartUp | SelfTest?IsSelfTest | VentilationOff?IsVentilationOff | PSV?IsPSV | PCV?IsPCV | FailSafe?IsFailSafe;
+     VentilationModes = struct Real_Time_Data | Settings | Frozen_View | Alarm_Settings;
+     OperationModeGUI = struct StartUp_GUI?IsStartUpGUI | Start_GUI?IsStartGUI | Stop_GUI?IsStopGUI | Menu_GUI?IsMenuGUI | SelfTest_GUI?IsSelfTestGUI | Ventilation_GUI?IsVentilationGUI | PSV_GUI?IsPSVGUI | PCV_GUI?IsPCVGUI | Settings_GUI?IsSettingsGUI | Settings_via_Menu_GUI?IsSettings_via_MenuGUI | Settings_via_PSV_GUI?IsSettings_via_PSVGUI | Settings_via_PCV_GUI?IsSettings_via_PCVGUI;
+     ConnectedSensors = struct CS(GB: Bool, FI1: Bool, FI2: Bool, IP: Bool, EP: Bool, O2: Bool);
+     ConnectedValves = struct CV(IN: Bool, OUT: Bool);
+     Ratio = struct ratio(pi1: Nat, pi2: Real);
+
+map  StartUpComplete: ConnectedSensors # ConnectedValves # Bool -> Bool;
+     SensorChecked: ConnectedSensors # SensorId -> Bool;
+     ValveChecked: ConnectedValves # ValveId -> Bool;
+     UpdateSensorStatus: ConnectedSensors # SensorId # Bool -> ConnectedSensors;
+     UpdateValveStatus: ConnectedValves # ValveId # Bool -> ConnectedValves;
+     InitialSensorStatus: ConnectedSensors;
+     InitialValveStatus: ConnectedValves;
+     FIO2target,PEEPvalue: Int;
+
+var  cs: ConnectedSensors;
+     cv: ConnectedValves;
+     sid: SensorId;
+     vid: ValveId;
+     cl,b: Bool;
+eqn  StartUpComplete(cs, cv, cl)  =  cs == CS(true, true, true, true, true, true) && cv == CV(true, true) && cl;
+     InitialSensorStatus  =  CS(false, false, false, false, false, false);
+     InitialValveStatus  =  CV(false, false);
+     SensorChecked(cs, GasBlenderPressure)  =  GB(cs);
+     SensorChecked(cs, FlowIndicator1)  =  FI1(cs);
+     SensorChecked(cs, FlowIndicator2)  =  FI2(cs);
+     SensorChecked(cs, InPressure)  =  IP(cs);
+     SensorChecked(cs, ExpPressure)  =  EP(cs);
+     SensorChecked(cs, Oxygen)  =  O2(cs);
+     ValveChecked(cv, In)  =  IN(cv);
+     ValveChecked(cv, Out)  =  OUT(cv);
+     UpdateSensorStatus(cs, GasBlenderPressure, b)  =  CS(b, FI1(cs), FI2(cs), IP(cs), EP(cs), O2(cs));
+     UpdateSensorStatus(cs, FlowIndicator1, b)  =  CS(GB(cs), b, FI2(cs), IP(cs), EP(cs), O2(cs));
+     UpdateSensorStatus(cs, FlowIndicator2, b)  =  CS(GB(cs), FI1(cs), b, IP(cs), EP(cs), O2(cs));
+     UpdateSensorStatus(cs, InPressure, b)  =  CS(GB(cs), FI1(cs), FI2(cs), b, EP(cs), O2(cs));
+     UpdateSensorStatus(cs, ExpPressure, b)  =  CS(GB(cs), FI1(cs), FI2(cs), IP(cs), b, O2(cs));
+     UpdateSensorStatus(cs, Oxygen, b)  =  CS(GB(cs), FI1(cs), FI2(cs), IP(cs), EP(cs), b);
+     UpdateValveStatus(cv, In, b)  =  CV(b, OUT(cv));
+     UpdateValveStatus(cv, Out, b)  =  CV(IN(cv), b);
+     FIO2target  =  50;
+     PEEPvalue  =  10;
+
+act  getSensorValue_s,getSensorValue_r,getSensorValue_c: SensorId # Int;
+     getSensorState_s,getSensorState_r,getSensorState_c: SensorId # SensorState;
+     break,error,recover;
+     updateSensorValue: SensorId # Int;
+     LowAlarm,MediumAlarm,HighAlarm;
+     alarm_r,alarm_s,alarm_c,snooze_alarm_r,snooze_alarm_s,snooze_alarm_c: AlarmLevels;
+     setValveState_s,setValveState_r,setValveState_c,getValveState_s,getValveState_r,getValveState_c: ValveId # ValveState;
+     setValveValue_s,setValveValue_r,setValveValue_c,setValveValue,getValveValue_s,getValveValue_r,getValveValue_c: ValveId # Int;
+     emitValveState: ValveId # ValveState;
+     initialise_GUI_parameters,new_patient,timeout,selfTestFailed;
+     selectMode: VentilationModes;
+     changeVentilationSettings,saveVentilationSettings,return,loadConfiguration;
+     timeout: SensorId;
+     timeout: ValveId;
+     internalCheckingComplete,startUpSuccessful,powerOn,powerOff,runningSelfTest,moveToPSV,apneaLag,storeParameters,error_r,error_s,error_c,startSelfTest_r,startSelfTest_s,startSelfTest_c,selfTestPassed_r,selfTestPassed_s,selfTestPassed_c,resumeVentilation_r,resumeVentilation_s,resumeVentilation_c,interrupt_selfTest_r,interrupt_selfTest_s,interrupt_selfTest_c,startPCV_r,startPCV_s,startPCV_c,startPSV_r,startPSV_s,startPSV_c,stopVentilation_r,stopVentilation_s,stopVentilation_c;
+     controller_Mode_r,controller_Mode_s,controller_Mode_c,emitMode_r,emitMode_s,emitMode_c,emitMode: OperationMode;
+     emitPhase: BreathingPhase;
+     load_defaults_r,load_defaults_s,load_defaults_c;
+     set_RR_PCV_s,set_RR_PCV_r,set_RR_PCV_c,get_RR_PCV_s,get_RR_PCV_r,get_RR_PCV_c: Nat;
+     set_I'E_PCV_s,set_I'E_PCV_r,set_I'E_PCV_c,get_I'E_PCV_s,get_I'E_PCV_r,get_I'E_PCV_c: Ratio;
+     set_P_insp_PCV_s,set_P_insp_PCV_r,set_P_insp_PCV_c,get_P_insp_PCV_s,get_P_insp_PCV_r,get_P_insp_PCV_c,set_ITS_PCV_s,set_ITS_PCV_r,set_ITS_PCV_c,get_ITS_PCV_s,get_ITS_PCV_r,get_ITS_PCV_c,set_P_insp_PSV_s,set_P_insp_PSV_r,set_P_insp_PSV_c,get_P_insp_PSV_s,get_P_insp_PSV_r,get_P_insp_PSV_c,set_ITS_PSV_s,set_ITS_PSV_r,set_ITS_PSV_c,get_ITS_PSV_s,get_ITS_PSV_r,get_ITS_PSV_c,set_ETS_s,set_ETS_r,set_ETS_c,get_ETS_s,get_ETS_r,get_ETS_c,set_ApneaLag_s,set_ApneaLag_r,set_ApneaLag_c,get_ApneaLag_s,get_ApneaLag_r,get_ApneaLag_c,set_RR_AP_s,set_RR_AP_r,set_RR_AP_c,get_RR_AP_s,get_RR_AP_r,get_RR_AP_c: Nat;
+     set_I'E_AP_s,set_I'E_AP_r,set_I'E_AP_c,get_I'E_AP_s,get_I'E_AP_r,get_I'E_AP_c: Ratio;
+     set_P_insp_AP_s,set_P_insp_AP_r,set_P_insp_AP_c,get_P_insp_AP_s,get_P_insp_AP_r,get_P_insp_AP_c,set_MaxP_insp_s,set_MaxP_insp_r,set_MaxP_insp_c,get_MaxP_insp_s,get_MaxP_insp_r,get_MaxP_insp_c,set_MinP_insp_s,set_MinP_insp_r,set_MinP_insp_c,get_MinP_insp_s,get_MinP_insp_r,get_MinP_insp_c,set_MaxV_tidal_exp_s,set_MaxV_tidal_exp_r,set_MaxV_tidal_exp_c,get_MaxV_tidal_exp_s,get_MaxV_tidal_exp_r,get_MaxV_tidal_exp_c,set_MinV_tidal_exp_s,set_MinV_tidal_exp_r,set_MinV_tidal_exp_c,get_MinV_tidal_exp_s,get_MinV_tidal_exp_r,get_MinV_tidal_exp_c,set_MaxV_tidal_insp_s,set_MaxV_tidal_insp_r,set_MaxV_tidal_insp_c,get_MaxV_tidal_insp_s,get_MaxV_tidal_insp_r,get_MaxV_tidal_insp_c,set_MinV_tidal_insp_s,set_MinV_tidal_insp_r,set_MinV_tidal_insp_c,get_MinV_tidal_insp_s,get_MinV_tidal_insp_r,get_MinV_tidal_insp_c,set_Min_V_E_s,set_Min_V_E_r,set_Min_V_E_c,get_Min_V_E_s,get_Min_V_E_r,get_Min_V_E_c,set_Max_V_E_s,set_Max_V_E_r,set_Max_V_E_c,get_Max_V_E_s,get_Max_V_E_r,get_Max_V_E_c,set_Min_RR_s,set_Min_RR_r,set_Min_RR_c,get_Min_RR_s,get_Min_RR_r,get_Min_RR_c,set_Max_RR_s,set_Max_RR_r,set_Max_RR_c,get_Max_RR_s,get_Max_RR_r,get_Max_RR_c,set_Min_PEEP_s,set_Min_PEEP_r,set_Min_PEEP_c,get_Min_PEEP_s,get_Min_PEEP_r,get_Min_PEEP_c,set_Max_PEEP_s,set_Max_PEEP_r,set_Max_PEEP_c,get_Max_PEEP_s,get_Max_PEEP_r,get_Max_PEEP_c,set_PRM_s,set_PRM_r,set_PRM_c,get_PRM_s,get_PRM_r,get_PRM_c,set_timerRM_s,set_timerRM_r,set_timerRM_c,get_timerRM_s,get_timerRM_r,get_timerRM_c,set_MaxDurationInspPause_s,set_MaxDurationInspPause_r,set_MaxDurationInspPause_c,get_MaxDurationInspPause_s,get_MaxDurationInspPause_r,get_MaxDurationInspPause_c,set_MaxDurationExpPause_s,set_MaxDurationExpPause_r,set_MaxDurationExpPause_c,get_MaxDurationExpPause_s,get_MaxDurationExpPause_r,get_MaxDurationExpPause_c: Nat;
+     set_triggerWindowDelay_s,set_triggerWindowDelay_r,set_triggerWindowDelay_c,get_triggerWindowDelay_s,get_triggerWindowDelay_r,get_triggerWindowDelay_c: Real;
+     set_max_insp_time_psv_s,set_max_insp_time_psv_r,set_max_insp_time_psv_c,get_max_insp_time_psv_s,get_max_insp_time_psv_r,get_max_insp_time_psv_c: Nat;
+
+glob dc,dc10,dc102,dc105,dc111,dc112,dc114,dc120,dc121,dc124,dc131,dc137,dc138,dc140,dc147,dc154,dc16,dc161,dc168,dc17,dc175,dc182,dc189,dc19,dc201,dc203,dc215,dc217,dc224,dc230,dc232,dc238,dc240,dc246,dc247,dc25,dc250,dc256,dc257,dc259,dc26,dc265,dc266,dc268,dc274,dc277,dc28,dc283,dc286,dc292,dc295,dc301,dc304,dc310,dc313,dc319,dc322,dc328,dc331,dc337,dc34,dc340,dc346,dc347,dc35,dc350,dc356,dc359,dc365,dc366,dc369,dc375,dc376,dc379,dc38,dc385,dc386,dc388,dc394,dc395,dc397,dc403,dc404,dc407,dc413,dc414,dc416,dc422,dc423,dc426,dc432,dc433,dc436,dc44,dc442,dc443,dc446,dc45,dc452,dc453,dc455,dc461,dc462,dc464,dc465,dc466,dc469,dc470,dc471,dc474,dc475,dc476,dc479,dc48,dc480,dc481,dc484,dc485,dc486,dc489,dc495,dc496,dc499,dc505,dc506,dc508,dc514,dc515,dc517,dc523,dc524,dc526,dc532,dc533,dc535,dc54,dc541,dc542,dc544,dc55,dc550,dc551,dc554,dc560,dc561,dc563,dc569,dc570,dc573,dc579,dc58,dc582,dc589,dc595,dc596,dc599,dc6,dc605,dc606,dc609,dc616,dc622,dc623,dc626,dc633,dc64,dc645,dc647,dc653,dc655,dc661,dc663,dc669,dc67,dc671,dc678,dc685,dc691,dc692,dc694,dc7,dc700,dc703,dc709,dc712,dc718,dc719,dc722,dc728,dc729,dc73,dc731,dc737,dc738,dc74,dc741,dc747,dc748,dc751,dc757,dc760,dc766,dc767,dc77,dc770,dc776,dc777,dc780,dc786,dc787,dc790,dc796,dc797,dc799,dc800,dc801,dc83,dc84,dc87,dc93,dc94,dc96: BreathingPhase;
+     dc1,dc106,dc11,dc115,dc125,dc132,dc141,dc148,dc155,dc162,dc169,dc176,dc183,dc190,dc196,dc20,dc204,dc210,dc218,dc225,dc233,dc241,dc251,dc260,dc269,dc278,dc287,dc29,dc296,dc305,dc314,dc323,dc332,dc341,dc351,dc360,dc370,dc380,dc389,dc39,dc398,dc408,dc417,dc427,dc437,dc447,dc456,dc49,dc490,dc500,dc509,dc518,dc527,dc536,dc545,dc555,dc564,dc574,dc583,dc59,dc590,dc600,dc610,dc617,dc627,dc634,dc640,dc648,dc656,dc664,dc672,dc679,dc68,dc686,dc695,dc704,dc713,dc723,dc732,dc742,dc752,dc761,dc771,dc78,dc781,dc791,dc88,dc97: ConnectedSensors;
+     dc100,dc108,dc109,dc117,dc118,dc127,dc128,dc13,dc134,dc135,dc14,dc143,dc144,dc150,dc151,dc157,dc158,dc164,dc165,dc171,dc172,dc178,dc179,dc185,dc186,dc192,dc193,dc198,dc199,dc206,dc207,dc212,dc213,dc22,dc220,dc221,dc227,dc228,dc23,dc235,dc236,dc243,dc244,dc253,dc254,dc262,dc263,dc271,dc272,dc280,dc281,dc289,dc290,dc298,dc299,dc3,dc307,dc308,dc31,dc316,dc317,dc32,dc325,dc326,dc334,dc335,dc343,dc344,dc353,dc354,dc362,dc363,dc372,dc373,dc382,dc383,dc391,dc392,dc4,dc400,dc401,dc41,dc410,dc411,dc419,dc42,dc420,dc429,dc430,dc439,dc440,dc449,dc450,dc458,dc459,dc492,dc493,dc502,dc503,dc51,dc511,dc512,dc52,dc520,dc521,dc529,dc530,dc538,dc539,dc547,dc548,dc557,dc558,dc566,dc567,dc576,dc577,dc585,dc586,dc592,dc593,dc602,dc603,dc61,dc612,dc613,dc619,dc62,dc620,dc629,dc630,dc636,dc637,dc642,dc643,dc650,dc651,dc658,dc659,dc666,dc667,dc674,dc675,dc681,dc682,dc688,dc689,dc697,dc698,dc70,dc706,dc707,dc71,dc715,dc716,dc725,dc726,dc734,dc735,dc744,dc745,dc754,dc755,dc763,dc764,dc773,dc774,dc783,dc784,dc793,dc794,dc80,dc81,dc90,dc91,dc99: Int;
+     dc101,dc103,dc110,dc113,dc119,dc122,dc129,dc136,dc139,dc145,dc15,dc152,dc159,dc166,dc173,dc18,dc180,dc187,dc194,dc200,dc208,dc214,dc222,dc229,dc237,dc24,dc245,dc248,dc255,dc258,dc264,dc267,dc27,dc273,dc275,dc282,dc284,dc291,dc293,dc300,dc302,dc309,dc311,dc318,dc320,dc327,dc329,dc33,dc336,dc338,dc345,dc348,dc355,dc357,dc36,dc364,dc367,dc374,dc377,dc384,dc387,dc393,dc396,dc402,dc405,dc412,dc415,dc421,dc424,dc43,dc431,dc434,dc441,dc444,dc451,dc454,dc46,dc460,dc463,dc467,dc472,dc477,dc482,dc487,dc494,dc497,dc5,dc504,dc507,dc513,dc516,dc522,dc525,dc53,dc531,dc534,dc540,dc543,dc549,dc552,dc559,dc56,dc562,dc568,dc571,dc578,dc580,dc587,dc594,dc597,dc604,dc607,dc614,dc621,dc624,dc63,dc631,dc638,dc644,dc65,dc652,dc660,dc668,dc676,dc683,dc690,dc693,dc699,dc701,dc708,dc710,dc717,dc72,dc720,dc727,dc730,dc736,dc739,dc746,dc749,dc75,dc756,dc758,dc765,dc768,dc775,dc778,dc785,dc788,dc795,dc798,dc8,dc802,dc82,dc85,dc92,dc95: Bool;
+     dc104,dc123,dc130,dc146,dc153,dc160,dc167,dc174,dc181,dc188,dc195,dc202,dc209,dc216,dc223,dc231,dc239,dc249,dc276,dc285,dc294,dc303,dc312,dc321,dc330,dc339,dc349,dc358,dc368,dc37,dc378,dc406,dc425,dc435,dc445,dc468,dc47,dc473,dc478,dc483,dc488,dc498,dc553,dc57,dc572,dc581,dc588,dc598,dc608,dc615,dc625,dc632,dc639,dc646,dc654,dc66,dc662,dc670,dc677,dc684,dc702,dc711,dc721,dc740,dc750,dc759,dc76,dc769,dc779,dc789,dc803,dc86,dc9: OperationMode;
+     dc107,dc116,dc12,dc126,dc133,dc142,dc149,dc156,dc163,dc170,dc177,dc184,dc191,dc197,dc2,dc205,dc21,dc211,dc219,dc226,dc234,dc242,dc252,dc261,dc270,dc279,dc288,dc297,dc30,dc306,dc315,dc324,dc333,dc342,dc352,dc361,dc371,dc381,dc390,dc399,dc40,dc409,dc418,dc428,dc438,dc448,dc457,dc491,dc50,dc501,dc510,dc519,dc528,dc537,dc546,dc556,dc565,dc575,dc584,dc591,dc60,dc601,dc611,dc618,dc628,dc635,dc641,dc649,dc657,dc665,dc673,dc680,dc687,dc69,dc696,dc705,dc714,dc724,dc733,dc743,dc753,dc762,dc772,dc782,dc79,dc792,dc89,dc98: ConnectedValves;
+     dc804,dc805,dc806,dc807,dc808,dc809,dc810,dc811,dc812,dc813,dc814,dc815,dc816,dc817,dc818,dc819,dc820,dc821,dc822,dc823,dc824,dc825,dc826,dc827,dc828,dc829,dc830,dc831,dc832,dc833,dc834,dc835,dc836,dc837,dc838,dc839: OperationModeGUI;
+     dc840,dc842,dc844,dc848,dc857,dc858,dc869,dc871,dc873,dc877,dc886,dc887: Nat;
+
+proc P(s1_Controller_Stop: Pos, phase_Controller_Stop: BreathingPhase, cs_Controller_Stop: ConnectedSensors, cv_Controller_Stop: ConnectedValves, PS_retries_Controller_Stop,ADC_retries_Controller_Stop: Int, configLoaded_Controller_Stop: Bool, currPhase_Controller_Stop,oldPhase_Controller_Stop: BreathingPhase, PSVrequested_Controller_Stop: Bool, mode_Controller_Stop,mode_ExposeControllerMode: OperationMode, state_Sensor6,state_Sensor7: SensorState, currVal_Sensor7: Int, state_Sensor8: SensorState, currVal_Sensor8: Int, state_Sensor9: SensorState, currVal_Sensor9: Int, state_Sensor10: SensorState, currVal_Sensor10: Int, state_Sensor11: SensorState, currVal_Sensor11: Int, state_InValve1,state_OutValve1: ValveState, s13_GUI_Stop: Pos, mode_GUI_Stop: OperationModeGUI, medium_VisualAlarms,high_VisualAlarms: Bool, s15_ConfigurationMemory: Pos, P_insp_PCV_ConfigurationMemory,P_insp_PSV_ConfigurationMemory,Min_V_E_ConfigurationMemory,Max_V_E_ConfigurationMemory: Nat) =
+       (s1_Controller_Stop == 1 && mode_Controller_Stop == Stop) ->
+         storeParameters .
+         P(s1_Controller_Stop = 14, phase_Controller_Stop = dc10, cs_Controller_Stop = dc11, cv_Controller_Stop = dc12, PS_retries_Controller_Stop = dc13, ADC_retries_Controller_Stop = dc14, configLoaded_Controller_Stop = dc15, currPhase_Controller_Stop = dc16, oldPhase_Controller_Stop = dc17, PSVrequested_Controller_Stop = dc18)
+     + (s1_Controller_Stop == 1 && mode_Controller_Stop == StartUp) ->
+         powerOff .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc19, cs_Controller_Stop = dc20, cv_Controller_Stop = dc21, PS_retries_Controller_Stop = dc22, ADC_retries_Controller_Stop = dc23, configLoaded_Controller_Stop = dc24, currPhase_Controller_Stop = dc25, oldPhase_Controller_Stop = dc26, PSVrequested_Controller_Stop = dc27, mode_Controller_Stop = Stop)
+     + (s1_Controller_Stop == 2) ->
+         powerOff .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc87, cs_Controller_Stop = dc88, cv_Controller_Stop = dc89, PS_retries_Controller_Stop = dc90, ADC_retries_Controller_Stop = dc91, configLoaded_Controller_Stop = dc92, currPhase_Controller_Stop = dc93, oldPhase_Controller_Stop = dc94, PSVrequested_Controller_Stop = dc95, mode_Controller_Stop = Stop)
+     + (s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) ->
+         powerOff .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc105, cs_Controller_Stop = dc106, cv_Controller_Stop = dc107, PS_retries_Controller_Stop = dc108, ADC_retries_Controller_Stop = dc109, configLoaded_Controller_Stop = dc110, currPhase_Controller_Stop = dc111, oldPhase_Controller_Stop = dc112, PSVrequested_Controller_Stop = dc113, mode_Controller_Stop = Stop)
+     + (s1_Controller_Stop == 3 && currPhase_Controller_Stop == Inspiration && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) ->
+         emitPhase(Expiration) .
+         P(s1_Controller_Stop = 20, phase_Controller_Stop = Expiration, cs_Controller_Stop = dc196, cv_Controller_Stop = dc197, PS_retries_Controller_Stop = dc198, ADC_retries_Controller_Stop = dc199, configLoaded_Controller_Stop = dc200, oldPhase_Controller_Stop = dc201, mode_Controller_Stop = dc202)
+     + sum phase2_Controller_Stop: BreathingPhase.
+         (s1_Controller_Stop == 3 && ((!(phase2_Controller_Stop == Expiration) && (phase2_Controller_Stop == InspirationPause || phase2_Controller_Stop == RecruitmentManoever || phase2_Controller_Stop == Expiration)) && currPhase_Controller_Stop == Inspiration) && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) ->
+         emitPhase(phase2_Controller_Stop) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc203, cs_Controller_Stop = dc204, cv_Controller_Stop = dc205, PS_retries_Controller_Stop = dc206, ADC_retries_Controller_Stop = dc207, configLoaded_Controller_Stop = dc208, currPhase_Controller_Stop = phase2_Controller_Stop, oldPhase_Controller_Stop = currPhase_Controller_Stop, mode_Controller_Stop = dc209)
+     + (s1_Controller_Stop == 3 && currPhase_Controller_Stop == InspirationPause && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) ->
+         emitPhase(Expiration) .
+         P(s1_Controller_Stop = 20, phase_Controller_Stop = Expiration, cs_Controller_Stop = dc210, cv_Controller_Stop = dc211, PS_retries_Controller_Stop = dc212, ADC_retries_Controller_Stop = dc213, configLoaded_Controller_Stop = dc214, oldPhase_Controller_Stop = dc215, mode_Controller_Stop = dc216)
+     + sum phase4_Controller_Stop: BreathingPhase.
+         (s1_Controller_Stop == 3 && ((!(phase4_Controller_Stop == Expiration) && (phase4_Controller_Stop == RecruitmentManoever || phase4_Controller_Stop == Expiration)) && currPhase_Controller_Stop == InspirationPause) && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) ->
+         emitPhase(phase4_Controller_Stop) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc217, cs_Controller_Stop = dc218, cv_Controller_Stop = dc219, PS_retries_Controller_Stop = dc220, ADC_retries_Controller_Stop = dc221, configLoaded_Controller_Stop = dc222, currPhase_Controller_Stop = phase4_Controller_Stop, oldPhase_Controller_Stop = currPhase_Controller_Stop, mode_Controller_Stop = dc223)
+     + (s1_Controller_Stop == 3 && currPhase_Controller_Stop == RecruitmentManoever && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) ->
+         emitPhase(Expiration) .
+         P(s1_Controller_Stop = 21, phase_Controller_Stop = dc224, cs_Controller_Stop = dc225, cv_Controller_Stop = dc226, PS_retries_Controller_Stop = dc227, ADC_retries_Controller_Stop = dc228, configLoaded_Controller_Stop = dc229, oldPhase_Controller_Stop = dc230, mode_Controller_Stop = dc231)
+     + (s1_Controller_Stop == 3 && currPhase_Controller_Stop == Expiration && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) ->
+         emitPhase(Inspiration) .
+         P(s1_Controller_Stop = 22, phase_Controller_Stop = dc232, cs_Controller_Stop = dc233, cv_Controller_Stop = dc234, PS_retries_Controller_Stop = dc235, ADC_retries_Controller_Stop = dc236, configLoaded_Controller_Stop = dc237, oldPhase_Controller_Stop = dc238, mode_Controller_Stop = dc239)
+     + (s1_Controller_Stop == 4) ->
+         powerOff .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc250, cs_Controller_Stop = dc251, cv_Controller_Stop = dc252, PS_retries_Controller_Stop = dc253, ADC_retries_Controller_Stop = dc254, configLoaded_Controller_Stop = dc255, currPhase_Controller_Stop = dc256, oldPhase_Controller_Stop = dc257, PSVrequested_Controller_Stop = dc258, mode_Controller_Stop = Stop)
+     + (s1_Controller_Stop == 4 && currPhase_Controller_Stop == Inspiration) ->
+         emitPhase(Expiration) .
+         P(s1_Controller_Stop = 29, phase_Controller_Stop = dc340, cs_Controller_Stop = dc341, cv_Controller_Stop = dc342, PS_retries_Controller_Stop = dc343, ADC_retries_Controller_Stop = dc344, configLoaded_Controller_Stop = dc345, currPhase_Controller_Stop = dc346, oldPhase_Controller_Stop = dc347, PSVrequested_Controller_Stop = dc348, mode_Controller_Stop = dc349)
+     + (s1_Controller_Stop == 4 && currPhase_Controller_Stop == Expiration) ->
+         emitPhase(ApneaTriggerWindow) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc350, cs_Controller_Stop = dc351, cv_Controller_Stop = dc352, PS_retries_Controller_Stop = dc353, ADC_retries_Controller_Stop = dc354, configLoaded_Controller_Stop = dc355, currPhase_Controller_Stop = ApneaTriggerWindow, oldPhase_Controller_Stop = dc356, PSVrequested_Controller_Stop = dc357, mode_Controller_Stop = dc358)
+     + (s1_Controller_Stop == 4 && currPhase_Controller_Stop == ApneaTriggerWindow) ->
+         apneaLag .
+         P(s1_Controller_Stop = 30, phase_Controller_Stop = dc359, cs_Controller_Stop = dc360, cv_Controller_Stop = dc361, PS_retries_Controller_Stop = dc362, ADC_retries_Controller_Stop = dc363, configLoaded_Controller_Stop = dc364, currPhase_Controller_Stop = dc365, oldPhase_Controller_Stop = dc366, PSVrequested_Controller_Stop = dc367, mode_Controller_Stop = dc368)
+     + (s1_Controller_Stop == 4 && currPhase_Controller_Stop == ApneaTriggerWindow) ->
+         emitPhase(Inspiration) .
+         P(s1_Controller_Stop = 31, phase_Controller_Stop = dc369, cs_Controller_Stop = dc370, cv_Controller_Stop = dc371, PS_retries_Controller_Stop = dc372, ADC_retries_Controller_Stop = dc373, configLoaded_Controller_Stop = dc374, currPhase_Controller_Stop = dc375, oldPhase_Controller_Stop = dc376, PSVrequested_Controller_Stop = dc377, mode_Controller_Stop = dc378)
+     + (s1_Controller_Stop == 5) ->
+         powerOff .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc379, cs_Controller_Stop = dc380, cv_Controller_Stop = dc381, PS_retries_Controller_Stop = dc382, ADC_retries_Controller_Stop = dc383, configLoaded_Controller_Stop = dc384, currPhase_Controller_Stop = dc385, oldPhase_Controller_Stop = dc386, PSVrequested_Controller_Stop = dc387, mode_Controller_Stop = Stop)
+     + (s1_Controller_Stop == 6) ->
+         powerOff .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc407, cs_Controller_Stop = dc408, cv_Controller_Stop = dc409, PS_retries_Controller_Stop = dc410, ADC_retries_Controller_Stop = dc411, configLoaded_Controller_Stop = dc412, currPhase_Controller_Stop = dc413, oldPhase_Controller_Stop = dc414, PSVrequested_Controller_Stop = dc415, mode_Controller_Stop = Stop)
+     + (s1_Controller_Stop == 6) ->
+         runningSelfTest .
+         P(s1_Controller_Stop = 36, phase_Controller_Stop = dc416, cs_Controller_Stop = dc417, cv_Controller_Stop = dc418, PS_retries_Controller_Stop = dc419, ADC_retries_Controller_Stop = dc420, configLoaded_Controller_Stop = dc421, currPhase_Controller_Stop = dc422, oldPhase_Controller_Stop = dc423, PSVrequested_Controller_Stop = dc424, mode_Controller_Stop = dc425)
+     + (s1_Controller_Stop == 6) ->
+         runningSelfTest .
+         P(s1_Controller_Stop = 37, phase_Controller_Stop = dc426, cs_Controller_Stop = dc427, cv_Controller_Stop = dc428, PS_retries_Controller_Stop = dc429, ADC_retries_Controller_Stop = dc430, configLoaded_Controller_Stop = dc431, currPhase_Controller_Stop = dc432, oldPhase_Controller_Stop = dc433, PSVrequested_Controller_Stop = dc434, mode_Controller_Stop = dc435)
+     + (s1_Controller_Stop == 7 && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) ->
+         powerOff .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc446, cs_Controller_Stop = dc447, cv_Controller_Stop = dc448, PS_retries_Controller_Stop = dc449, ADC_retries_Controller_Stop = dc450, configLoaded_Controller_Stop = dc451, currPhase_Controller_Stop = dc452, oldPhase_Controller_Stop = dc453, PSVrequested_Controller_Stop = dc454, mode_Controller_Stop = Stop)
+     + (s1_Controller_Stop == 7 && (cs_Controller_Stop == CS(true, true, true, true, true, true) && cv_Controller_Stop == CV(true, true) && configLoaded_Controller_Stop) && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) ->
+         startUpSuccessful .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc455, cs_Controller_Stop = dc456, cv_Controller_Stop = dc457, PS_retries_Controller_Stop = dc458, ADC_retries_Controller_Stop = dc459, configLoaded_Controller_Stop = dc460, currPhase_Controller_Stop = dc461, oldPhase_Controller_Stop = dc462, PSVrequested_Controller_Stop = dc463, mode_Controller_Stop = SelfTest)
+     + (s1_Controller_Stop == 7 && !GB(cs_Controller_Stop) && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) ->
+         timeout(GasBlenderPressure) .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc474, PS_retries_Controller_Stop = PS_retries_Controller_Stop + 1, currPhase_Controller_Stop = dc475, oldPhase_Controller_Stop = dc476, PSVrequested_Controller_Stop = dc477, mode_Controller_Stop = dc478)
+     + (s1_Controller_Stop == 8) ->
+         powerOn .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc499, cs_Controller_Stop = dc500, cv_Controller_Stop = dc501, PS_retries_Controller_Stop = dc502, ADC_retries_Controller_Stop = dc503, configLoaded_Controller_Stop = dc504, currPhase_Controller_Stop = dc505, oldPhase_Controller_Stop = dc506, PSVrequested_Controller_Stop = dc507, mode_Controller_Stop = StartUp)
+     + (s1_Controller_Stop == 9) ->
+         powerOff .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc508, cs_Controller_Stop = dc509, cv_Controller_Stop = dc510, PS_retries_Controller_Stop = dc511, ADC_retries_Controller_Stop = dc512, configLoaded_Controller_Stop = dc513, currPhase_Controller_Stop = dc514, oldPhase_Controller_Stop = dc515, PSVrequested_Controller_Stop = dc516, mode_Controller_Stop = Stop)
+     + (s1_Controller_Stop == 10) ->
+         powerOff .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc554, cs_Controller_Stop = dc555, cv_Controller_Stop = dc556, PS_retries_Controller_Stop = dc557, ADC_retries_Controller_Stop = dc558, configLoaded_Controller_Stop = dc559, currPhase_Controller_Stop = dc560, oldPhase_Controller_Stop = dc561, PSVrequested_Controller_Stop = dc562, mode_Controller_Stop = Stop)
+     + (s1_Controller_Stop == 16) ->
+         emitPhase(Inspiration) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc609, cs_Controller_Stop = dc610, cv_Controller_Stop = dc611, PS_retries_Controller_Stop = dc612, ADC_retries_Controller_Stop = dc613, configLoaded_Controller_Stop = dc614, currPhase_Controller_Stop = Inspiration, oldPhase_Controller_Stop = Inspiration, PSVrequested_Controller_Stop = false, mode_Controller_Stop = dc615)
+     + emitMode(mode_ExposeControllerMode) .
+         P()
+     + (s1_Controller_Stop == 1 && mode_Controller_Stop == SelfTest) ->
+         emitMode_c(mode_Controller_Stop) .
+         P(s1_Controller_Stop = 5, phase_Controller_Stop = dc38, cs_Controller_Stop = dc39, cv_Controller_Stop = dc40, PS_retries_Controller_Stop = dc41, ADC_retries_Controller_Stop = dc42, configLoaded_Controller_Stop = dc43, currPhase_Controller_Stop = dc44, oldPhase_Controller_Stop = dc45, PSVrequested_Controller_Stop = dc46, mode_Controller_Stop = dc47, mode_ExposeControllerMode = mode_Controller_Stop)
+     + (s1_Controller_Stop == 1 && mode_Controller_Stop == VentilationOff) ->
+         emitMode_c(mode_Controller_Stop) .
+         P(s1_Controller_Stop = 10, phase_Controller_Stop = dc48, cs_Controller_Stop = dc49, cv_Controller_Stop = dc50, PS_retries_Controller_Stop = dc51, ADC_retries_Controller_Stop = dc52, configLoaded_Controller_Stop = dc53, currPhase_Controller_Stop = dc54, oldPhase_Controller_Stop = dc55, PSVrequested_Controller_Stop = dc56, mode_Controller_Stop = dc57, mode_ExposeControllerMode = mode_Controller_Stop)
+     + (s1_Controller_Stop == 1 && mode_Controller_Stop == PSV) ->
+         emitMode_c(mode_Controller_Stop) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc58, cs_Controller_Stop = dc59, cv_Controller_Stop = dc60, PS_retries_Controller_Stop = dc61, ADC_retries_Controller_Stop = dc62, configLoaded_Controller_Stop = dc63, currPhase_Controller_Stop = ApneaTriggerWindow, oldPhase_Controller_Stop = dc64, PSVrequested_Controller_Stop = dc65, mode_Controller_Stop = dc66, mode_ExposeControllerMode = mode_Controller_Stop)
+     + (s1_Controller_Stop == 1 && mode_Controller_Stop == PCV) ->
+         emitMode_c(mode_Controller_Stop) .
+         P(s1_Controller_Stop = 16, phase_Controller_Stop = dc67, cs_Controller_Stop = dc68, cv_Controller_Stop = dc69, PS_retries_Controller_Stop = dc70, ADC_retries_Controller_Stop = dc71, configLoaded_Controller_Stop = dc72, currPhase_Controller_Stop = dc73, oldPhase_Controller_Stop = dc74, PSVrequested_Controller_Stop = dc75, mode_Controller_Stop = dc76, mode_ExposeControllerMode = mode_Controller_Stop)
+     + (s1_Controller_Stop == 1 && mode_Controller_Stop == FailSafe) ->
+         emitMode_c(mode_Controller_Stop) .
+         P(s1_Controller_Stop = 2, phase_Controller_Stop = dc77, cs_Controller_Stop = dc78, cv_Controller_Stop = dc79, PS_retries_Controller_Stop = dc80, ADC_retries_Controller_Stop = dc81, configLoaded_Controller_Stop = dc82, currPhase_Controller_Stop = dc83, oldPhase_Controller_Stop = dc84, PSVrequested_Controller_Stop = dc85, mode_Controller_Stop = dc86, mode_ExposeControllerMode = mode_Controller_Stop)
+     + (s1_Controller_Stop == 3 && PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration) ->
+         emitMode_c(PSV) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc96, cs_Controller_Stop = dc97, cv_Controller_Stop = dc98, PS_retries_Controller_Stop = dc99, ADC_retries_Controller_Stop = dc100, configLoaded_Controller_Stop = dc101, currPhase_Controller_Stop = ApneaTriggerWindow, oldPhase_Controller_Stop = dc102, PSVrequested_Controller_Stop = dc103, mode_Controller_Stop = dc104, mode_ExposeControllerMode = PSV)
+     + (s1_Controller_Stop == 7 && !(PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5)) ->
+         emitMode_c(FailSafe) .
+         P(s1_Controller_Stop = 2, phase_Controller_Stop = dc489, cs_Controller_Stop = dc490, cv_Controller_Stop = dc491, PS_retries_Controller_Stop = dc492, ADC_retries_Controller_Stop = dc493, configLoaded_Controller_Stop = dc494, currPhase_Controller_Stop = dc495, oldPhase_Controller_Stop = dc496, PSVrequested_Controller_Stop = dc497, mode_Controller_Stop = dc498, mode_ExposeControllerMode = FailSafe)
+     + (s1_Controller_Stop == 14) ->
+         emitMode_c(mode_Controller_Stop) .
+         P(s1_Controller_Stop = 8, phase_Controller_Stop = dc589, cs_Controller_Stop = dc590, cv_Controller_Stop = dc591, PS_retries_Controller_Stop = dc592, ADC_retries_Controller_Stop = dc593, configLoaded_Controller_Stop = dc594, currPhase_Controller_Stop = dc595, oldPhase_Controller_Stop = dc596, PSVrequested_Controller_Stop = dc597, mode_Controller_Stop = dc598, mode_ExposeControllerMode = mode_Controller_Stop)
+     + (s1_Controller_Stop == 35) ->
+         emitMode_c(VentilationOff) .
+         P(s1_Controller_Stop = 9, phase_Controller_Stop = dc770, cs_Controller_Stop = dc771, cv_Controller_Stop = dc772, PS_retries_Controller_Stop = dc773, ADC_retries_Controller_Stop = dc774, configLoaded_Controller_Stop = dc775, currPhase_Controller_Stop = dc776, oldPhase_Controller_Stop = dc777, PSVrequested_Controller_Stop = dc778, mode_Controller_Stop = dc779, mode_ExposeControllerMode = VentilationOff)
+     + (s1_Controller_Stop == 38) ->
+         emitMode_c(StartUp) .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc799, cs_Controller_Stop = CS(false, false, false, false, false, false), cv_Controller_Stop = CV(false, false), PS_retries_Controller_Stop = 0, ADC_retries_Controller_Stop = 0, configLoaded_Controller_Stop = true, currPhase_Controller_Stop = dc800, oldPhase_Controller_Stop = dc801, PSVrequested_Controller_Stop = dc802, mode_Controller_Stop = dc803, mode_ExposeControllerMode = StartUp)
+     + (state_Sensor6 == Working) ->
+         updateSensorValue(GasBlenderPressure, 4500) .
+         P()
+     + (state_Sensor6 == Working) ->
+         error .
+         P(state_Sensor6 = Error)
+     + (state_Sensor6 == Error) ->
+         recover .
+         P(state_Sensor6 = Working)
+     + (!(state_Sensor6 == sFaulty)) ->
+         break .
+         P(state_Sensor6 = sFaulty)
+     + sum value_Sensor7: Int.
+         ((value_Sensor7 == 15 || value_Sensor7 == 20 || value_Sensor7 == 25) && state_Sensor7 == Working) ->
+         updateSensorValue(FlowIndicator1, value_Sensor7) .
+         P(currVal_Sensor7 = value_Sensor7)
+     + (state_Sensor7 == Working) ->
+         error .
+         P(state_Sensor7 = Error)
+     + (state_Sensor7 == Error) ->
+         recover .
+         P(state_Sensor7 = Working)
+     + (!(state_Sensor7 == sFaulty)) ->
+         break .
+         P(state_Sensor7 = sFaulty)
+     + sum value_Sensor8: Int.
+         ((value_Sensor8 == 15 || value_Sensor8 == 20 || value_Sensor8 == 25) && state_Sensor8 == Working) ->
+         updateSensorValue(FlowIndicator2, value_Sensor8) .
+         P(currVal_Sensor8 = value_Sensor8)
+     + (state_Sensor8 == Working) ->
+         error .
+         P(state_Sensor8 = Error)
+     + (state_Sensor8 == Error) ->
+         recover .
+         P(state_Sensor8 = Working)
+     + (!(state_Sensor8 == sFaulty)) ->
+         break .
+         P(state_Sensor8 = sFaulty)
+     + sum value_Sensor9: Int.
+         ((value_Sensor9 == 5 || value_Sensor9 == 15 || value_Sensor9 == 25 || value_Sensor9 == 35 || value_Sensor9 == 45 || value_Sensor9 == 50) && state_Sensor9 == Working) ->
+         updateSensorValue(InPressure, value_Sensor9) .
+         P(currVal_Sensor9 = value_Sensor9)
+     + (state_Sensor9 == Working) ->
+         error .
+         P(state_Sensor9 = Error)
+     + (state_Sensor9 == Error) ->
+         recover .
+         P(state_Sensor9 = Working)
+     + (!(state_Sensor9 == sFaulty)) ->
+         break .
+         P(state_Sensor9 = sFaulty)
+     + sum value_Sensor10: Int.
+         ((value_Sensor10 == 5 || value_Sensor10 == 10 || value_Sensor10 == 15 || value_Sensor10 == 20) && state_Sensor10 == Working) ->
+         updateSensorValue(ExpPressure, value_Sensor10) .
+         P(currVal_Sensor10 = value_Sensor10)
+     + (state_Sensor10 == Working) ->
+         error .
+         P(state_Sensor10 = Error)
+     + (state_Sensor10 == Error) ->
+         recover .
+         P(state_Sensor10 = Working)
+     + (!(state_Sensor10 == sFaulty)) ->
+         break .
+         P(state_Sensor10 = sFaulty)
+     + sum value_Sensor11: Int.
+         ((value_Sensor11 == 46 || value_Sensor11 == 47 || value_Sensor11 == 50 || value_Sensor11 == 53 || value_Sensor11 == 54) && state_Sensor11 == Working) ->
+         updateSensorValue(Oxygen, value_Sensor11) .
+         P(currVal_Sensor11 = value_Sensor11)
+     + (state_Sensor11 == Working) ->
+         error .
+         P(state_Sensor11 = Error)
+     + (state_Sensor11 == Error) ->
+         recover .
+         P(state_Sensor11 = Working)
+     + (!(state_Sensor11 == sFaulty)) ->
+         break .
+         P(state_Sensor11 = sFaulty)
+     + setValveValue(GasBlenderFlow, 50) .
+         P()
+     + setValveValue(PEEPvalve, 10) .
+         P()
+     + emitValveState(In, state_InValve1) .
+         P()
+     + emitValveState(Out, state_OutValve1) .
+         P()
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == StartUp_GUI) ->
+         initialise_GUI_parameters .
+         P(s13_GUI_Stop = 11, mode_GUI_Stop = dc805)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == StartUp_GUI) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Start_GUI) ->
+         new_patient .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = SelfTest_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Start_GUI) ->
+         timeout .
+         P(s13_GUI_Stop = 4, mode_GUI_Stop = dc806)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Start_GUI) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Stop_GUI) ->
+         powerOn .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = StartUp_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Menu_GUI) ->
+         changeVentilationSettings|controller_Mode_c(VentilationOff) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_Menu_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Menu_GUI) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == SelfTest_GUI) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) ->
+         selectMode(Settings) .
+         P(s13_GUI_Stop = 9, mode_GUI_Stop = dc808)
+     + (s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) ->
+         selectMode(Frozen_View) .
+         P(s13_GUI_Stop = 7, mode_GUI_Stop = dc809)
+     + (s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) ->
+         selectMode(Alarm_Settings) .
+         P(s13_GUI_Stop = 6, mode_GUI_Stop = dc810)
+     + (s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) ->
+         saveVentilationSettings .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Menu_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) ->
+         return .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Menu_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) ->
+         saveVentilationSettings .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = PCV_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) ->
+         return .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = PCV_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) ->
+         saveVentilationSettings .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = PSV_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) ->
+         return .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = PSV_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 2) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 3) ->
+         saveVentilationSettings .
+         P(s13_GUI_Stop = 1)
+     + (s13_GUI_Stop == 3) ->
+         return .
+         P(s13_GUI_Stop = 1)
+     + (s13_GUI_Stop == 3) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 4) ->
+         new_patient .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = SelfTest_GUI)
+     + (s13_GUI_Stop == 4) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 5) ->
+         powerOn .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = StartUp_GUI)
+     + (s13_GUI_Stop == 6) ->
+         selectMode(Real_Time_Data) .
+         P(s13_GUI_Stop = 8, mode_GUI_Stop = dc815)
+     + (s13_GUI_Stop == 6) ->
+         selectMode(Settings) .
+         P(s13_GUI_Stop = 9, mode_GUI_Stop = dc816)
+     + (s13_GUI_Stop == 6) ->
+         selectMode(Frozen_View) .
+         P(s13_GUI_Stop = 7, mode_GUI_Stop = dc817)
+     + (s13_GUI_Stop == 7) ->
+         selectMode(Real_Time_Data) .
+         P(s13_GUI_Stop = 8, mode_GUI_Stop = dc820)
+     + (s13_GUI_Stop == 7) ->
+         selectMode(Settings) .
+         P(s13_GUI_Stop = 9, mode_GUI_Stop = dc821)
+     + (s13_GUI_Stop == 7) ->
+         selectMode(Alarm_Settings) .
+         P(s13_GUI_Stop = 6, mode_GUI_Stop = dc822)
+     + (s13_GUI_Stop == 7) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 8) ->
+         selectMode(Settings) .
+         P(s13_GUI_Stop = 9, mode_GUI_Stop = dc825)
+     + (s13_GUI_Stop == 8) ->
+         selectMode(Frozen_View) .
+         P(s13_GUI_Stop = 7, mode_GUI_Stop = dc826)
+     + (s13_GUI_Stop == 8) ->
+         selectMode(Alarm_Settings) .
+         P(s13_GUI_Stop = 6, mode_GUI_Stop = dc827)
+     + (s13_GUI_Stop == 8) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 9) ->
+         selectMode(Real_Time_Data) .
+         P(s13_GUI_Stop = 8, mode_GUI_Stop = dc831)
+     + (s13_GUI_Stop == 9) ->
+         selectMode(Frozen_View) .
+         P(s13_GUI_Stop = 7, mode_GUI_Stop = dc832)
+     + (s13_GUI_Stop == 9) ->
+         selectMode(Alarm_Settings) .
+         P(s13_GUI_Stop = 6, mode_GUI_Stop = dc833)
+     + (s13_GUI_Stop == 9) ->
+         powerOff .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Stop_GUI)
+     + (s13_GUI_Stop == 13) ->
+         selfTestFailed .
+         P(s13_GUI_Stop = 10, mode_GUI_Stop = dc839)
+     + (false) ->
+         LowAlarm .
+         P()
+     + (medium_VisualAlarms) ->
+         MediumAlarm .
+         P()
+     + (high_VisualAlarms) ->
+         HighAlarm .
+         P()
+     + (s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) ->
+         snooze_alarm_c(Low) .
+         P(s13_GUI_Stop = 8, mode_GUI_Stop = dc813)
+     + (s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) ->
+         snooze_alarm_c(Medium) .
+         P(s13_GUI_Stop = 8, mode_GUI_Stop = dc813, medium_VisualAlarms = false)
+     + (s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) ->
+         snooze_alarm_c(High) .
+         P(s13_GUI_Stop = 8, mode_GUI_Stop = dc813, high_VisualAlarms = false)
+     + ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) && s15_ConfigurationMemory == 1) ->
+         load_defaults_c .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = Menu_GUI, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc842, P_insp_PSV_ConfigurationMemory = dc844, Min_V_E_ConfigurationMemory = dc857, Max_V_E_ConfigurationMemory = dc858)
+     + ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) && s15_ConfigurationMemory == 2) ->
+         load_defaults_c .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = Menu_GUI, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc871, P_insp_PSV_ConfigurationMemory = dc873, Min_V_E_ConfigurationMemory = dc886, Max_V_E_ConfigurationMemory = dc887)
+     + sum v_ConfigurationMemory8: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) && s15_ConfigurationMemory == 1 && 4 <= v_ConfigurationMemory8 && v_ConfigurationMemory8 <= 50) ->
+         set_RR_AP_c(v_ConfigurationMemory8) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_Menu_GUI, s15_ConfigurationMemory = 1)
+     + sum v_ConfigurationMemory33: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) && s15_ConfigurationMemory == 2 && 4 <= v_ConfigurationMemory33 && v_ConfigurationMemory33 <= 50) ->
+         set_RR_AP_c(v_ConfigurationMemory33) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_Menu_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + sum v_ConfigurationMemory17: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory17 && v_ConfigurationMemory17 <= 80) ->
+         set_Min_V_E_c(v_ConfigurationMemory17) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, Min_V_E_ConfigurationMemory = v_ConfigurationMemory17)
+     + sum v_ConfigurationMemory42: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory42 && v_ConfigurationMemory42 <= 80) ->
+         set_Min_V_E_c(v_ConfigurationMemory42) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = v_ConfigurationMemory42, Max_V_E_ConfigurationMemory = 0)
+     + sum v_ConfigurationMemory18: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory18 && v_ConfigurationMemory18 <= 80) ->
+         set_Max_V_E_c(v_ConfigurationMemory18) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, Max_V_E_ConfigurationMemory = v_ConfigurationMemory18)
+     + sum v_ConfigurationMemory43: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory43 && v_ConfigurationMemory43 <= 80) ->
+         set_Max_V_E_c(v_ConfigurationMemory43) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = v_ConfigurationMemory43)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) ->
+         snooze_alarm_c(Low) .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = Menu_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) ->
+         snooze_alarm_c(Medium) .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = Menu_GUI, medium_VisualAlarms = false)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_Menu_GUI) ->
+         snooze_alarm_c(High) .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = Menu_GUI, high_VisualAlarms = false)
+     + ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) && s15_ConfigurationMemory == 1) ->
+         load_defaults_c .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = PCV_GUI, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc842, P_insp_PSV_ConfigurationMemory = dc844, Min_V_E_ConfigurationMemory = dc857, Max_V_E_ConfigurationMemory = dc858)
+     + ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) && s15_ConfigurationMemory == 2) ->
+         load_defaults_c .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = PCV_GUI, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc871, P_insp_PSV_ConfigurationMemory = dc873, Min_V_E_ConfigurationMemory = dc886, Max_V_E_ConfigurationMemory = dc887)
+     + sum v_ConfigurationMemory8: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) && s15_ConfigurationMemory == 1 && 4 <= v_ConfigurationMemory8 && v_ConfigurationMemory8 <= 50) ->
+         set_RR_AP_c(v_ConfigurationMemory8) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_Menu_GUI, s15_ConfigurationMemory = 1)
+     + sum v_ConfigurationMemory33: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) && s15_ConfigurationMemory == 2 && 4 <= v_ConfigurationMemory33 && v_ConfigurationMemory33 <= 50) ->
+         set_RR_AP_c(v_ConfigurationMemory33) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_Menu_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + sum v_ConfigurationMemory17: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory17 && v_ConfigurationMemory17 <= 80) ->
+         set_Min_V_E_c(v_ConfigurationMemory17) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, Min_V_E_ConfigurationMemory = v_ConfigurationMemory17)
+     + sum v_ConfigurationMemory42: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory42 && v_ConfigurationMemory42 <= 80) ->
+         set_Min_V_E_c(v_ConfigurationMemory42) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = v_ConfigurationMemory42, Max_V_E_ConfigurationMemory = 0)
+     + sum v_ConfigurationMemory18: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory18 && v_ConfigurationMemory18 <= 80) ->
+         set_Max_V_E_c(v_ConfigurationMemory18) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, Max_V_E_ConfigurationMemory = v_ConfigurationMemory18)
+     + sum v_ConfigurationMemory43: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory43 && v_ConfigurationMemory43 <= 80) ->
+         set_Max_V_E_c(v_ConfigurationMemory43) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = v_ConfigurationMemory43)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) ->
+         snooze_alarm_c(Low) .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = PCV_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) ->
+         snooze_alarm_c(Medium) .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = PCV_GUI, medium_VisualAlarms = false)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PCV_GUI) ->
+         snooze_alarm_c(High) .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = PCV_GUI, high_VisualAlarms = false)
+     + ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) && s15_ConfigurationMemory == 1) ->
+         load_defaults_c .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = PSV_GUI, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc842, P_insp_PSV_ConfigurationMemory = dc844, Min_V_E_ConfigurationMemory = dc857, Max_V_E_ConfigurationMemory = dc858)
+     + ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) && s15_ConfigurationMemory == 2) ->
+         load_defaults_c .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = PSV_GUI, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc871, P_insp_PSV_ConfigurationMemory = dc873, Min_V_E_ConfigurationMemory = dc886, Max_V_E_ConfigurationMemory = dc887)
+     + sum v_ConfigurationMemory8: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) && s15_ConfigurationMemory == 1 && 4 <= v_ConfigurationMemory8 && v_ConfigurationMemory8 <= 50) ->
+         set_RR_AP_c(v_ConfigurationMemory8) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_Menu_GUI, s15_ConfigurationMemory = 1)
+     + sum v_ConfigurationMemory33: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) && s15_ConfigurationMemory == 2 && 4 <= v_ConfigurationMemory33 && v_ConfigurationMemory33 <= 50) ->
+         set_RR_AP_c(v_ConfigurationMemory33) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_Menu_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + sum v_ConfigurationMemory17: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory17 && v_ConfigurationMemory17 <= 80) ->
+         set_Min_V_E_c(v_ConfigurationMemory17) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, Min_V_E_ConfigurationMemory = v_ConfigurationMemory17)
+     + sum v_ConfigurationMemory42: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory42 && v_ConfigurationMemory42 <= 80) ->
+         set_Min_V_E_c(v_ConfigurationMemory42) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = v_ConfigurationMemory42, Max_V_E_ConfigurationMemory = 0)
+     + sum v_ConfigurationMemory18: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory18 && v_ConfigurationMemory18 <= 80) ->
+         set_Max_V_E_c(v_ConfigurationMemory18) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, Max_V_E_ConfigurationMemory = v_ConfigurationMemory18)
+     + sum v_ConfigurationMemory43: Nat.
+         ((s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory43 && v_ConfigurationMemory43 <= 80) ->
+         set_Max_V_E_c(v_ConfigurationMemory43) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = v_ConfigurationMemory43)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) ->
+         snooze_alarm_c(Low) .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = PSV_GUI)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) ->
+         snooze_alarm_c(Medium) .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = PSV_GUI, medium_VisualAlarms = false)
+     + (s13_GUI_Stop == 1 && mode_GUI_Stop == Settings_via_PSV_GUI) ->
+         snooze_alarm_c(High) .
+         P(s13_GUI_Stop = 3, mode_GUI_Stop = PSV_GUI, high_VisualAlarms = false)
+     + (s13_GUI_Stop == 3 && s15_ConfigurationMemory == 1) ->
+         load_defaults_c .
+         P(s13_GUI_Stop = 3, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc842, P_insp_PSV_ConfigurationMemory = dc844, Min_V_E_ConfigurationMemory = dc857, Max_V_E_ConfigurationMemory = dc858)
+     + (s13_GUI_Stop == 3 && s15_ConfigurationMemory == 2) ->
+         load_defaults_c .
+         P(s13_GUI_Stop = 3, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc871, P_insp_PSV_ConfigurationMemory = dc873, Min_V_E_ConfigurationMemory = dc886, Max_V_E_ConfigurationMemory = dc887)
+     + sum v_ConfigurationMemory8: Nat.
+         (s13_GUI_Stop == 3 && s15_ConfigurationMemory == 1 && 4 <= v_ConfigurationMemory8 && v_ConfigurationMemory8 <= 50) ->
+         set_RR_AP_c(v_ConfigurationMemory8) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_Menu_GUI, s15_ConfigurationMemory = 1)
+     + sum v_ConfigurationMemory33: Nat.
+         (s13_GUI_Stop == 3 && s15_ConfigurationMemory == 2 && 4 <= v_ConfigurationMemory33 && v_ConfigurationMemory33 <= 50) ->
+         set_RR_AP_c(v_ConfigurationMemory33) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_Menu_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + sum v_ConfigurationMemory17: Nat.
+         (s13_GUI_Stop == 3 && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory17 && v_ConfigurationMemory17 <= 80) ->
+         set_Min_V_E_c(v_ConfigurationMemory17) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, Min_V_E_ConfigurationMemory = v_ConfigurationMemory17)
+     + sum v_ConfigurationMemory42: Nat.
+         (s13_GUI_Stop == 3 && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory42 && v_ConfigurationMemory42 <= 80) ->
+         set_Min_V_E_c(v_ConfigurationMemory42) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = v_ConfigurationMemory42, Max_V_E_ConfigurationMemory = 0)
+     + sum v_ConfigurationMemory18: Nat.
+         (s13_GUI_Stop == 3 && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory18 && v_ConfigurationMemory18 <= 80) ->
+         set_Max_V_E_c(v_ConfigurationMemory18) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, Max_V_E_ConfigurationMemory = v_ConfigurationMemory18)
+     + sum v_ConfigurationMemory43: Nat.
+         (s13_GUI_Stop == 3 && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory43 && v_ConfigurationMemory43 <= 80) ->
+         set_Max_V_E_c(v_ConfigurationMemory43) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = v_ConfigurationMemory43)
+     + (s13_GUI_Stop == 3) ->
+         snooze_alarm_c(Low) .
+         P(s13_GUI_Stop = 3)
+     + (s13_GUI_Stop == 3) ->
+         snooze_alarm_c(Medium) .
+         P(s13_GUI_Stop = 3, medium_VisualAlarms = false)
+     + (s13_GUI_Stop == 3) ->
+         snooze_alarm_c(High) .
+         P(s13_GUI_Stop = 3, high_VisualAlarms = false)
+     + (s13_GUI_Stop == 6) ->
+         snooze_alarm_c(Low) .
+         P(s13_GUI_Stop = 6, mode_GUI_Stop = dc819)
+     + (s13_GUI_Stop == 6) ->
+         snooze_alarm_c(Medium) .
+         P(s13_GUI_Stop = 6, mode_GUI_Stop = dc819, medium_VisualAlarms = false)
+     + (s13_GUI_Stop == 6) ->
+         snooze_alarm_c(High) .
+         P(s13_GUI_Stop = 6, mode_GUI_Stop = dc819, high_VisualAlarms = false)
+     + (s13_GUI_Stop == 7) ->
+         snooze_alarm_c(Low) .
+         P(s13_GUI_Stop = 7, mode_GUI_Stop = dc824)
+     + (s13_GUI_Stop == 7) ->
+         snooze_alarm_c(Medium) .
+         P(s13_GUI_Stop = 7, mode_GUI_Stop = dc824, medium_VisualAlarms = false)
+     + (s13_GUI_Stop == 7) ->
+         snooze_alarm_c(High) .
+         P(s13_GUI_Stop = 7, mode_GUI_Stop = dc824, high_VisualAlarms = false)
+     + (s13_GUI_Stop == 8) ->
+         snooze_alarm_c(Low) .
+         P(s13_GUI_Stop = 8, mode_GUI_Stop = dc830)
+     + (s13_GUI_Stop == 8) ->
+         snooze_alarm_c(Medium) .
+         P(s13_GUI_Stop = 8, mode_GUI_Stop = dc830, medium_VisualAlarms = false)
+     + (s13_GUI_Stop == 8) ->
+         snooze_alarm_c(High) .
+         P(s13_GUI_Stop = 8, mode_GUI_Stop = dc830, high_VisualAlarms = false)
+     + (s13_GUI_Stop == 9 && s15_ConfigurationMemory == 1) ->
+         load_defaults_c .
+         P(s13_GUI_Stop = 9, mode_GUI_Stop = dc835, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc842, P_insp_PSV_ConfigurationMemory = dc844, Min_V_E_ConfigurationMemory = dc857, Max_V_E_ConfigurationMemory = dc858)
+     + (s13_GUI_Stop == 9 && s15_ConfigurationMemory == 2) ->
+         load_defaults_c .
+         P(s13_GUI_Stop = 9, mode_GUI_Stop = dc835, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc871, P_insp_PSV_ConfigurationMemory = dc873, Min_V_E_ConfigurationMemory = dc886, Max_V_E_ConfigurationMemory = dc887)
+     + sum v_ConfigurationMemory17: Nat.
+         (s13_GUI_Stop == 9 && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory17 && v_ConfigurationMemory17 <= 80) ->
+         set_Min_V_E_c(v_ConfigurationMemory17) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, Min_V_E_ConfigurationMemory = v_ConfigurationMemory17)
+     + sum v_ConfigurationMemory42: Nat.
+         (s13_GUI_Stop == 9 && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory42 && v_ConfigurationMemory42 <= 80) ->
+         set_Min_V_E_c(v_ConfigurationMemory42) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = v_ConfigurationMemory42, Max_V_E_ConfigurationMemory = 0)
+     + sum v_ConfigurationMemory18: Nat.
+         (s13_GUI_Stop == 9 && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory18 && v_ConfigurationMemory18 <= 80) ->
+         set_Max_V_E_c(v_ConfigurationMemory18) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, Max_V_E_ConfigurationMemory = v_ConfigurationMemory18)
+     + sum v_ConfigurationMemory43: Nat.
+         (s13_GUI_Stop == 9 && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory43 && v_ConfigurationMemory43 <= 80) ->
+         set_Max_V_E_c(v_ConfigurationMemory43) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = v_ConfigurationMemory43)
+     + (s13_GUI_Stop == 9) ->
+         snooze_alarm_c(Low) .
+         P(s13_GUI_Stop = 9, mode_GUI_Stop = dc836)
+     + (s13_GUI_Stop == 9) ->
+         snooze_alarm_c(Medium) .
+         P(s13_GUI_Stop = 9, mode_GUI_Stop = dc836, medium_VisualAlarms = false)
+     + (s13_GUI_Stop == 9) ->
+         snooze_alarm_c(High) .
+         P(s13_GUI_Stop = 9, mode_GUI_Stop = dc836, high_VisualAlarms = false)
+     + sum v_ConfigurationMemory8: Nat.
+         (s13_GUI_Stop == 9 && s15_ConfigurationMemory == 1 && 4 <= v_ConfigurationMemory8 && v_ConfigurationMemory8 <= 50) ->
+         set_RR_AP_c(v_ConfigurationMemory8) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_Menu_GUI, s15_ConfigurationMemory = 1)
+     + sum v_ConfigurationMemory33: Nat.
+         (s13_GUI_Stop == 9 && s15_ConfigurationMemory == 2 && 4 <= v_ConfigurationMemory33 && v_ConfigurationMemory33 <= 50) ->
+         set_RR_AP_c(v_ConfigurationMemory33) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_Menu_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + (s1_Controller_Stop == 1 && mode_Controller_Stop == StartUp) ->
+         setValveState_c(Out, Open) .
+         P(s1_Controller_Stop = 15, phase_Controller_Stop = dc28, cs_Controller_Stop = dc29, cv_Controller_Stop = dc30, PS_retries_Controller_Stop = dc31, ADC_retries_Controller_Stop = dc32, configLoaded_Controller_Stop = dc33, currPhase_Controller_Stop = dc34, oldPhase_Controller_Stop = dc35, PSVrequested_Controller_Stop = dc36, mode_Controller_Stop = dc37, state_OutValve1 = Open)
+     + ((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) ->
+         stopVentilation_c .
+         P(s1_Controller_Stop = 17, phase_Controller_Stop = dc114, cs_Controller_Stop = dc115, cv_Controller_Stop = dc116, PS_retries_Controller_Stop = dc117, ADC_retries_Controller_Stop = dc118, configLoaded_Controller_Stop = dc119, currPhase_Controller_Stop = dc120, oldPhase_Controller_Stop = dc121, PSVrequested_Controller_Stop = dc122, mode_Controller_Stop = dc123, s13_GUI_Stop = 1, mode_GUI_Stop = Menu_GUI)
+     + ((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && s13_GUI_Stop == 8) ->
+         stopVentilation_c .
+         P(s1_Controller_Stop = 17, phase_Controller_Stop = dc114, cs_Controller_Stop = dc115, cv_Controller_Stop = dc116, PS_retries_Controller_Stop = dc117, ADC_retries_Controller_Stop = dc118, configLoaded_Controller_Stop = dc119, currPhase_Controller_Stop = dc120, oldPhase_Controller_Stop = dc121, PSVrequested_Controller_Stop = dc122, mode_Controller_Stop = dc123, s13_GUI_Stop = 1, mode_GUI_Stop = Menu_GUI)
+     + sum m_GUI_Stop1: OperationMode.
+         ((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && s13_GUI_Stop == 1 && !(m_GUI_Stop1 == PSV) && mode_GUI_Stop == Menu_GUI) ->
+         controller_Mode_c(m_GUI_Stop1)|startPSV_c .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc124, cs_Controller_Stop = dc125, cv_Controller_Stop = dc126, PS_retries_Controller_Stop = dc127, ADC_retries_Controller_Stop = dc128, configLoaded_Controller_Stop = dc129, PSVrequested_Controller_Stop = true, mode_Controller_Stop = dc130, s13_GUI_Stop = 1, mode_GUI_Stop = PSV_GUI)
+     + (((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor6 == sFaulty)) && state_Sensor6 == sFaulty) ->
+         getSensorState_c(GasBlenderPressure, state_Sensor6) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc131, cs_Controller_Stop = dc132, cv_Controller_Stop = dc133, PS_retries_Controller_Stop = dc134, ADC_retries_Controller_Stop = dc135, configLoaded_Controller_Stop = dc136, currPhase_Controller_Stop = dc137, oldPhase_Controller_Stop = dc138, PSVrequested_Controller_Stop = dc139, mode_Controller_Stop = FailSafe)
+     + (((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor7 == sFaulty)) && state_Sensor7 == sFaulty) ->
+         getSensorState_c(FlowIndicator1, state_Sensor7) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc131, cs_Controller_Stop = dc132, cv_Controller_Stop = dc133, PS_retries_Controller_Stop = dc134, ADC_retries_Controller_Stop = dc135, configLoaded_Controller_Stop = dc136, currPhase_Controller_Stop = dc137, oldPhase_Controller_Stop = dc138, PSVrequested_Controller_Stop = dc139, mode_Controller_Stop = FailSafe)
+     + (((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor8 == sFaulty)) && state_Sensor8 == sFaulty) ->
+         getSensorState_c(FlowIndicator2, state_Sensor8) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc131, cs_Controller_Stop = dc132, cv_Controller_Stop = dc133, PS_retries_Controller_Stop = dc134, ADC_retries_Controller_Stop = dc135, configLoaded_Controller_Stop = dc136, currPhase_Controller_Stop = dc137, oldPhase_Controller_Stop = dc138, PSVrequested_Controller_Stop = dc139, mode_Controller_Stop = FailSafe)
+     + (((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor9 == sFaulty)) && state_Sensor9 == sFaulty) ->
+         getSensorState_c(InPressure, state_Sensor9) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc131, cs_Controller_Stop = dc132, cv_Controller_Stop = dc133, PS_retries_Controller_Stop = dc134, ADC_retries_Controller_Stop = dc135, configLoaded_Controller_Stop = dc136, currPhase_Controller_Stop = dc137, oldPhase_Controller_Stop = dc138, PSVrequested_Controller_Stop = dc139, mode_Controller_Stop = FailSafe)
+     + (((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor10 == sFaulty)) && state_Sensor10 == sFaulty) ->
+         getSensorState_c(ExpPressure, state_Sensor10) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc131, cs_Controller_Stop = dc132, cv_Controller_Stop = dc133, PS_retries_Controller_Stop = dc134, ADC_retries_Controller_Stop = dc135, configLoaded_Controller_Stop = dc136, currPhase_Controller_Stop = dc137, oldPhase_Controller_Stop = dc138, PSVrequested_Controller_Stop = dc139, mode_Controller_Stop = FailSafe)
+     + (((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor11 == sFaulty)) && state_Sensor11 == sFaulty) ->
+         getSensorState_c(Oxygen, state_Sensor11) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc131, cs_Controller_Stop = dc132, cv_Controller_Stop = dc133, PS_retries_Controller_Stop = dc134, ADC_retries_Controller_Stop = dc135, configLoaded_Controller_Stop = dc136, currPhase_Controller_Stop = dc137, oldPhase_Controller_Stop = dc138, PSVrequested_Controller_Stop = dc139, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 3 && !(state_Sensor6 == sFaulty) && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor6 == sFaulty)) ->
+         getSensorState_c(GasBlenderPressure, state_Sensor6) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc140, cs_Controller_Stop = dc141, cv_Controller_Stop = dc142, PS_retries_Controller_Stop = dc143, ADC_retries_Controller_Stop = dc144, configLoaded_Controller_Stop = dc145, mode_Controller_Stop = dc146)
+     + ((s1_Controller_Stop == 3 && !(state_Sensor7 == sFaulty) && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor7 == sFaulty)) ->
+         getSensorState_c(FlowIndicator1, state_Sensor7) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc140, cs_Controller_Stop = dc141, cv_Controller_Stop = dc142, PS_retries_Controller_Stop = dc143, ADC_retries_Controller_Stop = dc144, configLoaded_Controller_Stop = dc145, mode_Controller_Stop = dc146)
+     + ((s1_Controller_Stop == 3 && !(state_Sensor8 == sFaulty) && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor8 == sFaulty)) ->
+         getSensorState_c(FlowIndicator2, state_Sensor8) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc140, cs_Controller_Stop = dc141, cv_Controller_Stop = dc142, PS_retries_Controller_Stop = dc143, ADC_retries_Controller_Stop = dc144, configLoaded_Controller_Stop = dc145, mode_Controller_Stop = dc146)
+     + ((s1_Controller_Stop == 3 && !(state_Sensor9 == sFaulty) && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor9 == sFaulty)) ->
+         getSensorState_c(InPressure, state_Sensor9) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc140, cs_Controller_Stop = dc141, cv_Controller_Stop = dc142, PS_retries_Controller_Stop = dc143, ADC_retries_Controller_Stop = dc144, configLoaded_Controller_Stop = dc145, mode_Controller_Stop = dc146)
+     + ((s1_Controller_Stop == 3 && !(state_Sensor10 == sFaulty) && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor10 == sFaulty)) ->
+         getSensorState_c(ExpPressure, state_Sensor10) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc140, cs_Controller_Stop = dc141, cv_Controller_Stop = dc142, PS_retries_Controller_Stop = dc143, ADC_retries_Controller_Stop = dc144, configLoaded_Controller_Stop = dc145, mode_Controller_Stop = dc146)
+     + ((s1_Controller_Stop == 3 && !(state_Sensor11 == sFaulty) && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor11 == sFaulty)) ->
+         getSensorState_c(Oxygen, state_Sensor11) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc140, cs_Controller_Stop = dc141, cv_Controller_Stop = dc142, PS_retries_Controller_Stop = dc143, ADC_retries_Controller_Stop = dc144, configLoaded_Controller_Stop = dc145, mode_Controller_Stop = dc146)
+     + ((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor6 == sFaulty)) ->
+         getSensorValue_c(GasBlenderPressure, 4500) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc147, cs_Controller_Stop = dc148, cv_Controller_Stop = dc149, PS_retries_Controller_Stop = dc150, ADC_retries_Controller_Stop = dc151, configLoaded_Controller_Stop = dc152, mode_Controller_Stop = dc153)
+     + ((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor8 == sFaulty)) ->
+         getSensorValue_c(FlowIndicator2, currVal_Sensor8) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc147, cs_Controller_Stop = dc148, cv_Controller_Stop = dc149, PS_retries_Controller_Stop = dc150, ADC_retries_Controller_Stop = dc151, configLoaded_Controller_Stop = dc152, mode_Controller_Stop = dc153)
+     + ((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor9 == sFaulty)) ->
+         getSensorValue_c(InPressure, currVal_Sensor9) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc147, cs_Controller_Stop = dc148, cv_Controller_Stop = dc149, PS_retries_Controller_Stop = dc150, ADC_retries_Controller_Stop = dc151, configLoaded_Controller_Stop = dc152, mode_Controller_Stop = dc153)
+     + ((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor10 == sFaulty)) ->
+         getSensorValue_c(ExpPressure, currVal_Sensor10) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc147, cs_Controller_Stop = dc148, cv_Controller_Stop = dc149, PS_retries_Controller_Stop = dc150, ADC_retries_Controller_Stop = dc151, configLoaded_Controller_Stop = dc152, mode_Controller_Stop = dc153)
+     + ((s1_Controller_Stop == 3 && currVal_Sensor7 < Min_V_E_ConfigurationMemory && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 1) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Min_V_E_c(Min_V_E_ConfigurationMemory) .
+         P(s1_Controller_Stop = 18, phase_Controller_Stop = dc154, cs_Controller_Stop = dc155, cv_Controller_Stop = dc156, PS_retries_Controller_Stop = dc157, ADC_retries_Controller_Stop = dc158, configLoaded_Controller_Stop = dc159, mode_Controller_Stop = dc160, s15_ConfigurationMemory = 1)
+     + ((s1_Controller_Stop == 3 && currVal_Sensor7 < 2 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 2) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Min_V_E_c(2) .
+         P(s1_Controller_Stop = 18, phase_Controller_Stop = dc154, cs_Controller_Stop = dc155, cv_Controller_Stop = dc156, PS_retries_Controller_Stop = dc157, ADC_retries_Controller_Stop = dc158, configLoaded_Controller_Stop = dc159, mode_Controller_Stop = dc160, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + ((s1_Controller_Stop == 3 && Min_V_E_ConfigurationMemory <= currVal_Sensor7 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 1) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Min_V_E_c(Min_V_E_ConfigurationMemory) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc161, cs_Controller_Stop = dc162, cv_Controller_Stop = dc163, PS_retries_Controller_Stop = dc164, ADC_retries_Controller_Stop = dc165, configLoaded_Controller_Stop = dc166, mode_Controller_Stop = dc167, s15_ConfigurationMemory = 1)
+     + ((s1_Controller_Stop == 3 && 2 <= currVal_Sensor7 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 2) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Min_V_E_c(2) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc161, cs_Controller_Stop = dc162, cv_Controller_Stop = dc163, PS_retries_Controller_Stop = dc164, ADC_retries_Controller_Stop = dc165, configLoaded_Controller_Stop = dc166, mode_Controller_Stop = dc167, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + ((s1_Controller_Stop == 3 && Max_V_E_ConfigurationMemory < currVal_Sensor7 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 1) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Max_V_E_c(Max_V_E_ConfigurationMemory) .
+         P(s1_Controller_Stop = 19, phase_Controller_Stop = dc168, cs_Controller_Stop = dc169, cv_Controller_Stop = dc170, PS_retries_Controller_Stop = dc171, ADC_retries_Controller_Stop = dc172, configLoaded_Controller_Stop = dc173, mode_Controller_Stop = dc174, s15_ConfigurationMemory = 1)
+     + ((s1_Controller_Stop == 3 && 0 < currVal_Sensor7 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 2) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Max_V_E_c(0) .
+         P(s1_Controller_Stop = 19, phase_Controller_Stop = dc168, cs_Controller_Stop = dc169, cv_Controller_Stop = dc170, PS_retries_Controller_Stop = dc171, ADC_retries_Controller_Stop = dc172, configLoaded_Controller_Stop = dc173, mode_Controller_Stop = dc174, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + ((s1_Controller_Stop == 3 && currVal_Sensor7 <= Max_V_E_ConfigurationMemory && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 1) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Max_V_E_c(Max_V_E_ConfigurationMemory) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc175, cs_Controller_Stop = dc176, cv_Controller_Stop = dc177, PS_retries_Controller_Stop = dc178, ADC_retries_Controller_Stop = dc179, configLoaded_Controller_Stop = dc180, mode_Controller_Stop = dc181, s15_ConfigurationMemory = 1)
+     + ((s1_Controller_Stop == 3 && currVal_Sensor7 <= 0 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 2) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Max_V_E_c(0) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc175, cs_Controller_Stop = dc176, cv_Controller_Stop = dc177, PS_retries_Controller_Stop = dc178, ADC_retries_Controller_Stop = dc179, configLoaded_Controller_Stop = dc180, mode_Controller_Stop = dc181, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + ((s1_Controller_Stop == 3 && (5150 < 100 * currVal_Sensor11 || 100 * currVal_Sensor11 < 4850) && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor11 == sFaulty)) ->
+         getSensorValue_c(Oxygen, currVal_Sensor11)|getValveValue_c(GasBlenderFlow, 50) .
+         P(s1_Controller_Stop = 19, phase_Controller_Stop = dc182, cs_Controller_Stop = dc183, cv_Controller_Stop = dc184, PS_retries_Controller_Stop = dc185, ADC_retries_Controller_Stop = dc186, configLoaded_Controller_Stop = dc187, mode_Controller_Stop = dc188)
+     + ((s1_Controller_Stop == 3 && (100 * currVal_Sensor11 <= 5150 && 4850 <= 100 * currVal_Sensor11) && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && !(state_Sensor11 == sFaulty)) ->
+         getSensorValue_c(Oxygen, currVal_Sensor11)|getValveValue_c(GasBlenderFlow, 50) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc189, cs_Controller_Stop = dc190, cv_Controller_Stop = dc191, PS_retries_Controller_Stop = dc192, ADC_retries_Controller_Stop = dc193, configLoaded_Controller_Stop = dc194, mode_Controller_Stop = dc195)
+     + (s1_Controller_Stop == 4 && s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) ->
+         stopVentilation_c .
+         P(s1_Controller_Stop = 17, phase_Controller_Stop = dc240, cs_Controller_Stop = dc241, cv_Controller_Stop = dc242, PS_retries_Controller_Stop = dc243, ADC_retries_Controller_Stop = dc244, configLoaded_Controller_Stop = dc245, currPhase_Controller_Stop = dc246, oldPhase_Controller_Stop = dc247, PSVrequested_Controller_Stop = dc248, mode_Controller_Stop = dc249, s13_GUI_Stop = 1, mode_GUI_Stop = Menu_GUI)
+     + (s1_Controller_Stop == 4 && s13_GUI_Stop == 8) ->
+         stopVentilation_c .
+         P(s1_Controller_Stop = 17, phase_Controller_Stop = dc240, cs_Controller_Stop = dc241, cv_Controller_Stop = dc242, PS_retries_Controller_Stop = dc243, ADC_retries_Controller_Stop = dc244, configLoaded_Controller_Stop = dc245, currPhase_Controller_Stop = dc246, oldPhase_Controller_Stop = dc247, PSVrequested_Controller_Stop = dc248, mode_Controller_Stop = dc249, s13_GUI_Stop = 1, mode_GUI_Stop = Menu_GUI)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor6 == sFaulty)) && state_Sensor6 == sFaulty) ->
+         getSensorState_c(GasBlenderPressure, state_Sensor6) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc259, cs_Controller_Stop = dc260, cv_Controller_Stop = dc261, PS_retries_Controller_Stop = dc262, ADC_retries_Controller_Stop = dc263, configLoaded_Controller_Stop = dc264, currPhase_Controller_Stop = dc265, oldPhase_Controller_Stop = dc266, PSVrequested_Controller_Stop = dc267, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor7 == sFaulty)) && state_Sensor7 == sFaulty) ->
+         getSensorState_c(FlowIndicator1, state_Sensor7) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc259, cs_Controller_Stop = dc260, cv_Controller_Stop = dc261, PS_retries_Controller_Stop = dc262, ADC_retries_Controller_Stop = dc263, configLoaded_Controller_Stop = dc264, currPhase_Controller_Stop = dc265, oldPhase_Controller_Stop = dc266, PSVrequested_Controller_Stop = dc267, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor8 == sFaulty)) && state_Sensor8 == sFaulty) ->
+         getSensorState_c(FlowIndicator2, state_Sensor8) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc259, cs_Controller_Stop = dc260, cv_Controller_Stop = dc261, PS_retries_Controller_Stop = dc262, ADC_retries_Controller_Stop = dc263, configLoaded_Controller_Stop = dc264, currPhase_Controller_Stop = dc265, oldPhase_Controller_Stop = dc266, PSVrequested_Controller_Stop = dc267, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor9 == sFaulty)) && state_Sensor9 == sFaulty) ->
+         getSensorState_c(InPressure, state_Sensor9) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc259, cs_Controller_Stop = dc260, cv_Controller_Stop = dc261, PS_retries_Controller_Stop = dc262, ADC_retries_Controller_Stop = dc263, configLoaded_Controller_Stop = dc264, currPhase_Controller_Stop = dc265, oldPhase_Controller_Stop = dc266, PSVrequested_Controller_Stop = dc267, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor10 == sFaulty)) && state_Sensor10 == sFaulty) ->
+         getSensorState_c(ExpPressure, state_Sensor10) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc259, cs_Controller_Stop = dc260, cv_Controller_Stop = dc261, PS_retries_Controller_Stop = dc262, ADC_retries_Controller_Stop = dc263, configLoaded_Controller_Stop = dc264, currPhase_Controller_Stop = dc265, oldPhase_Controller_Stop = dc266, PSVrequested_Controller_Stop = dc267, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor11 == sFaulty)) && state_Sensor11 == sFaulty) ->
+         getSensorState_c(Oxygen, state_Sensor11) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc259, cs_Controller_Stop = dc260, cv_Controller_Stop = dc261, PS_retries_Controller_Stop = dc262, ADC_retries_Controller_Stop = dc263, configLoaded_Controller_Stop = dc264, currPhase_Controller_Stop = dc265, oldPhase_Controller_Stop = dc266, PSVrequested_Controller_Stop = dc267, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor6 == sFaulty)) && !(state_Sensor6 == sFaulty)) ->
+         getSensorState_c(GasBlenderPressure, state_Sensor6) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc268, cs_Controller_Stop = dc269, cv_Controller_Stop = dc270, PS_retries_Controller_Stop = dc271, ADC_retries_Controller_Stop = dc272, configLoaded_Controller_Stop = dc273, oldPhase_Controller_Stop = dc274, PSVrequested_Controller_Stop = dc275, mode_Controller_Stop = dc276)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor7 == sFaulty)) && !(state_Sensor7 == sFaulty)) ->
+         getSensorState_c(FlowIndicator1, state_Sensor7) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc268, cs_Controller_Stop = dc269, cv_Controller_Stop = dc270, PS_retries_Controller_Stop = dc271, ADC_retries_Controller_Stop = dc272, configLoaded_Controller_Stop = dc273, oldPhase_Controller_Stop = dc274, PSVrequested_Controller_Stop = dc275, mode_Controller_Stop = dc276)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor8 == sFaulty)) && !(state_Sensor8 == sFaulty)) ->
+         getSensorState_c(FlowIndicator2, state_Sensor8) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc268, cs_Controller_Stop = dc269, cv_Controller_Stop = dc270, PS_retries_Controller_Stop = dc271, ADC_retries_Controller_Stop = dc272, configLoaded_Controller_Stop = dc273, oldPhase_Controller_Stop = dc274, PSVrequested_Controller_Stop = dc275, mode_Controller_Stop = dc276)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor9 == sFaulty)) && !(state_Sensor9 == sFaulty)) ->
+         getSensorState_c(InPressure, state_Sensor9) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc268, cs_Controller_Stop = dc269, cv_Controller_Stop = dc270, PS_retries_Controller_Stop = dc271, ADC_retries_Controller_Stop = dc272, configLoaded_Controller_Stop = dc273, oldPhase_Controller_Stop = dc274, PSVrequested_Controller_Stop = dc275, mode_Controller_Stop = dc276)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor10 == sFaulty)) && !(state_Sensor10 == sFaulty)) ->
+         getSensorState_c(ExpPressure, state_Sensor10) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc268, cs_Controller_Stop = dc269, cv_Controller_Stop = dc270, PS_retries_Controller_Stop = dc271, ADC_retries_Controller_Stop = dc272, configLoaded_Controller_Stop = dc273, oldPhase_Controller_Stop = dc274, PSVrequested_Controller_Stop = dc275, mode_Controller_Stop = dc276)
+     + ((s1_Controller_Stop == 4 && !(state_Sensor11 == sFaulty)) && !(state_Sensor11 == sFaulty)) ->
+         getSensorState_c(Oxygen, state_Sensor11) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc268, cs_Controller_Stop = dc269, cv_Controller_Stop = dc270, PS_retries_Controller_Stop = dc271, ADC_retries_Controller_Stop = dc272, configLoaded_Controller_Stop = dc273, oldPhase_Controller_Stop = dc274, PSVrequested_Controller_Stop = dc275, mode_Controller_Stop = dc276)
+     + (s1_Controller_Stop == 4 && !(state_Sensor6 == sFaulty)) ->
+         getSensorValue_c(GasBlenderPressure, 4500) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc277, cs_Controller_Stop = dc278, cv_Controller_Stop = dc279, PS_retries_Controller_Stop = dc280, ADC_retries_Controller_Stop = dc281, configLoaded_Controller_Stop = dc282, oldPhase_Controller_Stop = dc283, PSVrequested_Controller_Stop = dc284, mode_Controller_Stop = dc285)
+     + (s1_Controller_Stop == 4 && !(state_Sensor8 == sFaulty)) ->
+         getSensorValue_c(FlowIndicator2, currVal_Sensor8) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc277, cs_Controller_Stop = dc278, cv_Controller_Stop = dc279, PS_retries_Controller_Stop = dc280, ADC_retries_Controller_Stop = dc281, configLoaded_Controller_Stop = dc282, oldPhase_Controller_Stop = dc283, PSVrequested_Controller_Stop = dc284, mode_Controller_Stop = dc285)
+     + (s1_Controller_Stop == 4 && !(state_Sensor9 == sFaulty)) ->
+         getSensorValue_c(InPressure, currVal_Sensor9) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc277, cs_Controller_Stop = dc278, cv_Controller_Stop = dc279, PS_retries_Controller_Stop = dc280, ADC_retries_Controller_Stop = dc281, configLoaded_Controller_Stop = dc282, oldPhase_Controller_Stop = dc283, PSVrequested_Controller_Stop = dc284, mode_Controller_Stop = dc285)
+     + (s1_Controller_Stop == 4 && !(state_Sensor10 == sFaulty)) ->
+         getSensorValue_c(ExpPressure, currVal_Sensor10) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc277, cs_Controller_Stop = dc278, cv_Controller_Stop = dc279, PS_retries_Controller_Stop = dc280, ADC_retries_Controller_Stop = dc281, configLoaded_Controller_Stop = dc282, oldPhase_Controller_Stop = dc283, PSVrequested_Controller_Stop = dc284, mode_Controller_Stop = dc285)
+     + ((s1_Controller_Stop == 4 && currVal_Sensor7 < Min_V_E_ConfigurationMemory) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 1) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Min_V_E_c(Min_V_E_ConfigurationMemory) .
+         P(s1_Controller_Stop = 27, phase_Controller_Stop = dc286, cs_Controller_Stop = dc287, cv_Controller_Stop = dc288, PS_retries_Controller_Stop = dc289, ADC_retries_Controller_Stop = dc290, configLoaded_Controller_Stop = dc291, oldPhase_Controller_Stop = dc292, PSVrequested_Controller_Stop = dc293, mode_Controller_Stop = dc294, s15_ConfigurationMemory = 1)
+     + ((s1_Controller_Stop == 4 && currVal_Sensor7 < 2) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 2) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Min_V_E_c(2) .
+         P(s1_Controller_Stop = 27, phase_Controller_Stop = dc286, cs_Controller_Stop = dc287, cv_Controller_Stop = dc288, PS_retries_Controller_Stop = dc289, ADC_retries_Controller_Stop = dc290, configLoaded_Controller_Stop = dc291, oldPhase_Controller_Stop = dc292, PSVrequested_Controller_Stop = dc293, mode_Controller_Stop = dc294, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + ((s1_Controller_Stop == 4 && Min_V_E_ConfigurationMemory <= currVal_Sensor7) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 1) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Min_V_E_c(Min_V_E_ConfigurationMemory) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc295, cs_Controller_Stop = dc296, cv_Controller_Stop = dc297, PS_retries_Controller_Stop = dc298, ADC_retries_Controller_Stop = dc299, configLoaded_Controller_Stop = dc300, oldPhase_Controller_Stop = dc301, PSVrequested_Controller_Stop = dc302, mode_Controller_Stop = dc303, s15_ConfigurationMemory = 1)
+     + ((s1_Controller_Stop == 4 && 2 <= currVal_Sensor7) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 2) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Min_V_E_c(2) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc295, cs_Controller_Stop = dc296, cv_Controller_Stop = dc297, PS_retries_Controller_Stop = dc298, ADC_retries_Controller_Stop = dc299, configLoaded_Controller_Stop = dc300, oldPhase_Controller_Stop = dc301, PSVrequested_Controller_Stop = dc302, mode_Controller_Stop = dc303, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + ((s1_Controller_Stop == 4 && Max_V_E_ConfigurationMemory < currVal_Sensor7) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 1) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Max_V_E_c(Max_V_E_ConfigurationMemory) .
+         P(s1_Controller_Stop = 28, phase_Controller_Stop = dc304, cs_Controller_Stop = dc305, cv_Controller_Stop = dc306, PS_retries_Controller_Stop = dc307, ADC_retries_Controller_Stop = dc308, configLoaded_Controller_Stop = dc309, oldPhase_Controller_Stop = dc310, PSVrequested_Controller_Stop = dc311, mode_Controller_Stop = dc312, s15_ConfigurationMemory = 1)
+     + ((s1_Controller_Stop == 4 && 0 < currVal_Sensor7) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 2) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Max_V_E_c(0) .
+         P(s1_Controller_Stop = 28, phase_Controller_Stop = dc304, cs_Controller_Stop = dc305, cv_Controller_Stop = dc306, PS_retries_Controller_Stop = dc307, ADC_retries_Controller_Stop = dc308, configLoaded_Controller_Stop = dc309, oldPhase_Controller_Stop = dc310, PSVrequested_Controller_Stop = dc311, mode_Controller_Stop = dc312, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + ((s1_Controller_Stop == 4 && currVal_Sensor7 <= Max_V_E_ConfigurationMemory) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 1) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Max_V_E_c(Max_V_E_ConfigurationMemory) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc313, cs_Controller_Stop = dc314, cv_Controller_Stop = dc315, PS_retries_Controller_Stop = dc316, ADC_retries_Controller_Stop = dc317, configLoaded_Controller_Stop = dc318, oldPhase_Controller_Stop = dc319, PSVrequested_Controller_Stop = dc320, mode_Controller_Stop = dc321, s15_ConfigurationMemory = 1)
+     + ((s1_Controller_Stop == 4 && currVal_Sensor7 <= 0) && !(state_Sensor7 == sFaulty) && s15_ConfigurationMemory == 2) ->
+         getSensorValue_c(FlowIndicator1, currVal_Sensor7)|get_Max_V_E_c(0) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc313, cs_Controller_Stop = dc314, cv_Controller_Stop = dc315, PS_retries_Controller_Stop = dc316, ADC_retries_Controller_Stop = dc317, configLoaded_Controller_Stop = dc318, oldPhase_Controller_Stop = dc319, PSVrequested_Controller_Stop = dc320, mode_Controller_Stop = dc321, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + ((s1_Controller_Stop == 4 && (5150 < 100 * currVal_Sensor11 || 100 * currVal_Sensor11 < 4850)) && !(state_Sensor11 == sFaulty)) ->
+         getSensorValue_c(Oxygen, currVal_Sensor11)|getValveValue_c(GasBlenderFlow, 50) .
+         P(s1_Controller_Stop = 28, phase_Controller_Stop = dc322, cs_Controller_Stop = dc323, cv_Controller_Stop = dc324, PS_retries_Controller_Stop = dc325, ADC_retries_Controller_Stop = dc326, configLoaded_Controller_Stop = dc327, oldPhase_Controller_Stop = dc328, PSVrequested_Controller_Stop = dc329, mode_Controller_Stop = dc330)
+     + ((s1_Controller_Stop == 4 && 100 * currVal_Sensor11 <= 5150 && 4850 <= 100 * currVal_Sensor11) && !(state_Sensor11 == sFaulty)) ->
+         getSensorValue_c(Oxygen, currVal_Sensor11)|getValveValue_c(GasBlenderFlow, 50) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc331, cs_Controller_Stop = dc332, cv_Controller_Stop = dc333, PS_retries_Controller_Stop = dc334, ADC_retries_Controller_Stop = dc335, configLoaded_Controller_Stop = dc336, oldPhase_Controller_Stop = dc337, PSVrequested_Controller_Stop = dc338, mode_Controller_Stop = dc339)
+     + (s1_Controller_Stop == 5 && s13_GUI_Stop == 1 && mode_GUI_Stop == Start_GUI) ->
+         resumeVentilation_c .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc388, cs_Controller_Stop = dc389, cv_Controller_Stop = dc390, PS_retries_Controller_Stop = dc391, ADC_retries_Controller_Stop = dc392, configLoaded_Controller_Stop = dc393, currPhase_Controller_Stop = dc394, oldPhase_Controller_Stop = dc395, PSVrequested_Controller_Stop = dc396, mode_Controller_Stop = VentilationOff, s13_GUI_Stop = 1, mode_GUI_Stop = Menu_GUI)
+     + (s1_Controller_Stop == 5 && s13_GUI_Stop == 1 && mode_GUI_Stop == SelfTest_GUI) ->
+         startSelfTest_c .
+         P(s1_Controller_Stop = 6, phase_Controller_Stop = dc397, cs_Controller_Stop = dc398, cv_Controller_Stop = dc399, PS_retries_Controller_Stop = dc400, ADC_retries_Controller_Stop = dc401, configLoaded_Controller_Stop = dc402, currPhase_Controller_Stop = dc403, oldPhase_Controller_Stop = dc404, PSVrequested_Controller_Stop = dc405, mode_Controller_Stop = dc406, s13_GUI_Stop = 12, mode_GUI_Stop = dc807)
+     + (s1_Controller_Stop == 5 && s13_GUI_Stop == 2) ->
+         startSelfTest_c .
+         P(s1_Controller_Stop = 6, phase_Controller_Stop = dc397, cs_Controller_Stop = dc398, cv_Controller_Stop = dc399, PS_retries_Controller_Stop = dc400, ADC_retries_Controller_Stop = dc401, configLoaded_Controller_Stop = dc402, currPhase_Controller_Stop = dc403, oldPhase_Controller_Stop = dc404, PSVrequested_Controller_Stop = dc405, mode_Controller_Stop = dc406, s13_GUI_Stop = 12, mode_GUI_Stop = dc814)
+     + (s1_Controller_Stop == 6 && s13_GUI_Stop == 12) ->
+         interrupt_selfTest_c .
+         P(s1_Controller_Stop = 5, phase_Controller_Stop = dc436, cs_Controller_Stop = dc437, cv_Controller_Stop = dc438, PS_retries_Controller_Stop = dc439, ADC_retries_Controller_Stop = dc440, configLoaded_Controller_Stop = dc441, currPhase_Controller_Stop = dc442, oldPhase_Controller_Stop = dc443, PSVrequested_Controller_Stop = dc444, mode_Controller_Stop = dc445, s13_GUI_Stop = 2, mode_GUI_Stop = dc838)
+     + ((s1_Controller_Stop == 7 && !configLoaded_Controller_Stop && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) && s15_ConfigurationMemory == 1) ->
+         load_defaults_c .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc464, configLoaded_Controller_Stop = true, currPhase_Controller_Stop = dc465, oldPhase_Controller_Stop = dc466, PSVrequested_Controller_Stop = dc467, mode_Controller_Stop = dc468, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc842, P_insp_PSV_ConfigurationMemory = dc844, Min_V_E_ConfigurationMemory = dc857, Max_V_E_ConfigurationMemory = dc858)
+     + ((s1_Controller_Stop == 7 && !configLoaded_Controller_Stop && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) && s15_ConfigurationMemory == 2) ->
+         load_defaults_c .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc464, configLoaded_Controller_Stop = true, currPhase_Controller_Stop = dc465, oldPhase_Controller_Stop = dc466, PSVrequested_Controller_Stop = dc467, mode_Controller_Stop = dc468, s15_ConfigurationMemory = 2, P_insp_PCV_ConfigurationMemory = dc871, P_insp_PSV_ConfigurationMemory = dc873, Min_V_E_ConfigurationMemory = dc886, Max_V_E_ConfigurationMemory = dc887)
+     + (((s1_Controller_Stop == 7 && !GB(cs_Controller_Stop) && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) && !(state_Sensor6 == sFaulty)) && state_Sensor6 == Error) ->
+         getSensorState_c(GasBlenderPressure, state_Sensor6) .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc469, PS_retries_Controller_Stop = PS_retries_Controller_Stop + 1, currPhase_Controller_Stop = dc470, oldPhase_Controller_Stop = dc471, PSVrequested_Controller_Stop = dc472, mode_Controller_Stop = dc473)
+     + ((s1_Controller_Stop == 7 && (!GB(cs_Controller_Stop) && state_Sensor6 == Working) && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) && !(state_Sensor6 == sFaulty)) ->
+         getSensorState_c(GasBlenderPressure, state_Sensor6) .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc479, cs_Controller_Stop = CS(true, FI1(cs_Controller_Stop), FI2(cs_Controller_Stop), IP(cs_Controller_Stop), EP(cs_Controller_Stop), O2(cs_Controller_Stop)), currPhase_Controller_Stop = dc480, oldPhase_Controller_Stop = dc481, PSVrequested_Controller_Stop = dc482, mode_Controller_Stop = dc483)
+     + ((s1_Controller_Stop == 7 && !FI1(cs_Controller_Stop) && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) && !(state_Sensor7 == sFaulty)) ->
+         getSensorState_c(FlowIndicator1, state_Sensor7) .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc479, cs_Controller_Stop = CS(GB(cs_Controller_Stop), true, FI2(cs_Controller_Stop), IP(cs_Controller_Stop), EP(cs_Controller_Stop), O2(cs_Controller_Stop)), currPhase_Controller_Stop = dc480, oldPhase_Controller_Stop = dc481, PSVrequested_Controller_Stop = dc482, mode_Controller_Stop = dc483)
+     + ((s1_Controller_Stop == 7 && !FI2(cs_Controller_Stop) && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) && !(state_Sensor8 == sFaulty)) ->
+         getSensorState_c(FlowIndicator2, state_Sensor8) .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc479, cs_Controller_Stop = CS(GB(cs_Controller_Stop), FI1(cs_Controller_Stop), true, IP(cs_Controller_Stop), EP(cs_Controller_Stop), O2(cs_Controller_Stop)), currPhase_Controller_Stop = dc480, oldPhase_Controller_Stop = dc481, PSVrequested_Controller_Stop = dc482, mode_Controller_Stop = dc483)
+     + ((s1_Controller_Stop == 7 && !IP(cs_Controller_Stop) && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) && !(state_Sensor9 == sFaulty)) ->
+         getSensorState_c(InPressure, state_Sensor9) .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc479, cs_Controller_Stop = CS(GB(cs_Controller_Stop), FI1(cs_Controller_Stop), FI2(cs_Controller_Stop), true, EP(cs_Controller_Stop), O2(cs_Controller_Stop)), currPhase_Controller_Stop = dc480, oldPhase_Controller_Stop = dc481, PSVrequested_Controller_Stop = dc482, mode_Controller_Stop = dc483)
+     + ((s1_Controller_Stop == 7 && !EP(cs_Controller_Stop) && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) && !(state_Sensor10 == sFaulty)) ->
+         getSensorState_c(ExpPressure, state_Sensor10) .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc479, cs_Controller_Stop = CS(GB(cs_Controller_Stop), FI1(cs_Controller_Stop), FI2(cs_Controller_Stop), IP(cs_Controller_Stop), true, O2(cs_Controller_Stop)), currPhase_Controller_Stop = dc480, oldPhase_Controller_Stop = dc481, PSVrequested_Controller_Stop = dc482, mode_Controller_Stop = dc483)
+     + ((s1_Controller_Stop == 7 && !O2(cs_Controller_Stop) && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) && !(state_Sensor11 == sFaulty)) ->
+         getSensorState_c(Oxygen, state_Sensor11) .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc479, cs_Controller_Stop = CS(GB(cs_Controller_Stop), FI1(cs_Controller_Stop), FI2(cs_Controller_Stop), IP(cs_Controller_Stop), EP(cs_Controller_Stop), true), currPhase_Controller_Stop = dc480, oldPhase_Controller_Stop = dc481, PSVrequested_Controller_Stop = dc482, mode_Controller_Stop = dc483)
+     + (s1_Controller_Stop == 7 && !IN(cv_Controller_Stop) && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) ->
+         getValveState_c(In, state_InValve1) .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc484, cv_Controller_Stop = CV(true, OUT(cv_Controller_Stop)), currPhase_Controller_Stop = dc485, oldPhase_Controller_Stop = dc486, PSVrequested_Controller_Stop = dc487, mode_Controller_Stop = dc488)
+     + (s1_Controller_Stop == 7 && !OUT(cv_Controller_Stop) && PS_retries_Controller_Stop < 5 && ADC_retries_Controller_Stop < 5) ->
+         getValveState_c(Out, state_OutValve1) .
+         P(s1_Controller_Stop = 7, phase_Controller_Stop = dc484, cv_Controller_Stop = CV(IN(cv_Controller_Stop), true), currPhase_Controller_Stop = dc485, oldPhase_Controller_Stop = dc486, PSVrequested_Controller_Stop = dc487, mode_Controller_Stop = dc488)
+     + sum m_GUI_Stop: OperationMode.
+         (s1_Controller_Stop == 9 && s13_GUI_Stop == 1 && !(m_GUI_Stop == PCV) && mode_GUI_Stop == Menu_GUI) ->
+         controller_Mode_c(m_GUI_Stop)|startPCV_c .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc517, cs_Controller_Stop = dc518, cv_Controller_Stop = dc519, PS_retries_Controller_Stop = dc520, ADC_retries_Controller_Stop = dc521, configLoaded_Controller_Stop = dc522, currPhase_Controller_Stop = dc523, oldPhase_Controller_Stop = dc524, PSVrequested_Controller_Stop = dc525, mode_Controller_Stop = PCV, s13_GUI_Stop = 1, mode_GUI_Stop = PCV_GUI)
+     + sum m_GUI_Stop1: OperationMode.
+         (s1_Controller_Stop == 9 && s13_GUI_Stop == 1 && !(m_GUI_Stop1 == PSV) && mode_GUI_Stop == Menu_GUI) ->
+         controller_Mode_c(m_GUI_Stop1)|startPSV_c .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc526, cs_Controller_Stop = dc527, cv_Controller_Stop = dc528, PS_retries_Controller_Stop = dc529, ADC_retries_Controller_Stop = dc530, configLoaded_Controller_Stop = dc531, currPhase_Controller_Stop = dc532, oldPhase_Controller_Stop = dc533, PSVrequested_Controller_Stop = dc534, mode_Controller_Stop = PSV, s13_GUI_Stop = 1, mode_GUI_Stop = PSV_GUI)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor6 == sFaulty)) && state_Sensor6 == Error) ->
+         getSensorState_c(GasBlenderPressure, state_Sensor6) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc535, cs_Controller_Stop = dc536, cv_Controller_Stop = dc537, PS_retries_Controller_Stop = dc538, ADC_retries_Controller_Stop = dc539, configLoaded_Controller_Stop = dc540, currPhase_Controller_Stop = dc541, oldPhase_Controller_Stop = dc542, PSVrequested_Controller_Stop = dc543, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor7 == sFaulty)) && state_Sensor7 == Error) ->
+         getSensorState_c(FlowIndicator1, state_Sensor7) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc535, cs_Controller_Stop = dc536, cv_Controller_Stop = dc537, PS_retries_Controller_Stop = dc538, ADC_retries_Controller_Stop = dc539, configLoaded_Controller_Stop = dc540, currPhase_Controller_Stop = dc541, oldPhase_Controller_Stop = dc542, PSVrequested_Controller_Stop = dc543, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor8 == sFaulty)) && state_Sensor8 == Error) ->
+         getSensorState_c(FlowIndicator2, state_Sensor8) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc535, cs_Controller_Stop = dc536, cv_Controller_Stop = dc537, PS_retries_Controller_Stop = dc538, ADC_retries_Controller_Stop = dc539, configLoaded_Controller_Stop = dc540, currPhase_Controller_Stop = dc541, oldPhase_Controller_Stop = dc542, PSVrequested_Controller_Stop = dc543, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor9 == sFaulty)) && state_Sensor9 == Error) ->
+         getSensorState_c(InPressure, state_Sensor9) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc535, cs_Controller_Stop = dc536, cv_Controller_Stop = dc537, PS_retries_Controller_Stop = dc538, ADC_retries_Controller_Stop = dc539, configLoaded_Controller_Stop = dc540, currPhase_Controller_Stop = dc541, oldPhase_Controller_Stop = dc542, PSVrequested_Controller_Stop = dc543, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor10 == sFaulty)) && state_Sensor10 == Error) ->
+         getSensorState_c(ExpPressure, state_Sensor10) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc535, cs_Controller_Stop = dc536, cv_Controller_Stop = dc537, PS_retries_Controller_Stop = dc538, ADC_retries_Controller_Stop = dc539, configLoaded_Controller_Stop = dc540, currPhase_Controller_Stop = dc541, oldPhase_Controller_Stop = dc542, PSVrequested_Controller_Stop = dc543, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor11 == sFaulty)) && state_Sensor11 == Error) ->
+         getSensorState_c(Oxygen, state_Sensor11) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc535, cs_Controller_Stop = dc536, cv_Controller_Stop = dc537, PS_retries_Controller_Stop = dc538, ADC_retries_Controller_Stop = dc539, configLoaded_Controller_Stop = dc540, currPhase_Controller_Stop = dc541, oldPhase_Controller_Stop = dc542, PSVrequested_Controller_Stop = dc543, mode_Controller_Stop = FailSafe)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor6 == Error)) && !(state_Sensor6 == sFaulty)) ->
+         getSensorState_c(GasBlenderPressure, state_Sensor6) .
+         P(s1_Controller_Stop = 9, phase_Controller_Stop = dc544, cs_Controller_Stop = dc545, cv_Controller_Stop = dc546, PS_retries_Controller_Stop = dc547, ADC_retries_Controller_Stop = dc548, configLoaded_Controller_Stop = dc549, currPhase_Controller_Stop = dc550, oldPhase_Controller_Stop = dc551, PSVrequested_Controller_Stop = dc552, mode_Controller_Stop = dc553)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor7 == Error)) && !(state_Sensor7 == sFaulty)) ->
+         getSensorState_c(FlowIndicator1, state_Sensor7) .
+         P(s1_Controller_Stop = 9, phase_Controller_Stop = dc544, cs_Controller_Stop = dc545, cv_Controller_Stop = dc546, PS_retries_Controller_Stop = dc547, ADC_retries_Controller_Stop = dc548, configLoaded_Controller_Stop = dc549, currPhase_Controller_Stop = dc550, oldPhase_Controller_Stop = dc551, PSVrequested_Controller_Stop = dc552, mode_Controller_Stop = dc553)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor8 == Error)) && !(state_Sensor8 == sFaulty)) ->
+         getSensorState_c(FlowIndicator2, state_Sensor8) .
+         P(s1_Controller_Stop = 9, phase_Controller_Stop = dc544, cs_Controller_Stop = dc545, cv_Controller_Stop = dc546, PS_retries_Controller_Stop = dc547, ADC_retries_Controller_Stop = dc548, configLoaded_Controller_Stop = dc549, currPhase_Controller_Stop = dc550, oldPhase_Controller_Stop = dc551, PSVrequested_Controller_Stop = dc552, mode_Controller_Stop = dc553)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor9 == Error)) && !(state_Sensor9 == sFaulty)) ->
+         getSensorState_c(InPressure, state_Sensor9) .
+         P(s1_Controller_Stop = 9, phase_Controller_Stop = dc544, cs_Controller_Stop = dc545, cv_Controller_Stop = dc546, PS_retries_Controller_Stop = dc547, ADC_retries_Controller_Stop = dc548, configLoaded_Controller_Stop = dc549, currPhase_Controller_Stop = dc550, oldPhase_Controller_Stop = dc551, PSVrequested_Controller_Stop = dc552, mode_Controller_Stop = dc553)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor10 == Error)) && !(state_Sensor10 == sFaulty)) ->
+         getSensorState_c(ExpPressure, state_Sensor10) .
+         P(s1_Controller_Stop = 9, phase_Controller_Stop = dc544, cs_Controller_Stop = dc545, cv_Controller_Stop = dc546, PS_retries_Controller_Stop = dc547, ADC_retries_Controller_Stop = dc548, configLoaded_Controller_Stop = dc549, currPhase_Controller_Stop = dc550, oldPhase_Controller_Stop = dc551, PSVrequested_Controller_Stop = dc552, mode_Controller_Stop = dc553)
+     + ((s1_Controller_Stop == 9 && !(state_Sensor11 == Error)) && !(state_Sensor11 == sFaulty)) ->
+         getSensorState_c(Oxygen, state_Sensor11) .
+         P(s1_Controller_Stop = 9, phase_Controller_Stop = dc544, cs_Controller_Stop = dc545, cv_Controller_Stop = dc546, PS_retries_Controller_Stop = dc547, ADC_retries_Controller_Stop = dc548, configLoaded_Controller_Stop = dc549, currPhase_Controller_Stop = dc550, oldPhase_Controller_Stop = dc551, PSVrequested_Controller_Stop = dc552, mode_Controller_Stop = dc553)
+     + (s1_Controller_Stop == 10) ->
+         setValveState_c(In, Closed) .
+         P(s1_Controller_Stop = 34, phase_Controller_Stop = dc563, cs_Controller_Stop = dc564, cv_Controller_Stop = dc565, PS_retries_Controller_Stop = dc566, ADC_retries_Controller_Stop = dc567, configLoaded_Controller_Stop = dc568, currPhase_Controller_Stop = dc569, oldPhase_Controller_Stop = dc570, PSVrequested_Controller_Stop = dc571, mode_Controller_Stop = dc572, state_InValve1 = Closed)
+     + (s1_Controller_Stop == 12 && s15_ConfigurationMemory == 1) ->
+         get_P_insp_PSV_c(P_insp_PSV_ConfigurationMemory)|setValveValue_c(In, P_insp_PSV_ConfigurationMemory) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc573, cs_Controller_Stop = dc574, cv_Controller_Stop = dc575, PS_retries_Controller_Stop = dc576, ADC_retries_Controller_Stop = dc577, configLoaded_Controller_Stop = dc578, currPhase_Controller_Stop = Inspiration, oldPhase_Controller_Stop = dc579, PSVrequested_Controller_Stop = dc580, mode_Controller_Stop = dc581, s15_ConfigurationMemory = 1)
+     + (s1_Controller_Stop == 12 && s15_ConfigurationMemory == 2) ->
+         get_P_insp_PSV_c(15)|setValveValue_c(In, 15) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc573, cs_Controller_Stop = dc574, cv_Controller_Stop = dc575, PS_retries_Controller_Stop = dc576, ADC_retries_Controller_Stop = dc577, configLoaded_Controller_Stop = dc578, currPhase_Controller_Stop = Inspiration, oldPhase_Controller_Stop = dc579, PSVrequested_Controller_Stop = dc580, mode_Controller_Stop = dc581, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + (s1_Controller_Stop == 13 && s15_ConfigurationMemory == 1) ->
+         get_P_insp_PCV_c(P_insp_PCV_ConfigurationMemory)|setValveValue_c(In, P_insp_PCV_ConfigurationMemory) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc582, cs_Controller_Stop = dc583, cv_Controller_Stop = dc584, PS_retries_Controller_Stop = dc585, ADC_retries_Controller_Stop = dc586, configLoaded_Controller_Stop = dc587, currPhase_Controller_Stop = Inspiration, oldPhase_Controller_Stop = currPhase_Controller_Stop, mode_Controller_Stop = dc588, s15_ConfigurationMemory = 1)
+     + (s1_Controller_Stop == 13 && s15_ConfigurationMemory == 2) ->
+         get_P_insp_PCV_c(15)|setValveValue_c(In, 15) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc582, cs_Controller_Stop = dc583, cv_Controller_Stop = dc584, PS_retries_Controller_Stop = dc585, ADC_retries_Controller_Stop = dc586, configLoaded_Controller_Stop = dc587, currPhase_Controller_Stop = Inspiration, oldPhase_Controller_Stop = currPhase_Controller_Stop, mode_Controller_Stop = dc588, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + (s1_Controller_Stop == 15) ->
+         setValveState_c(In, Closed) .
+         P(s1_Controller_Stop = 38, phase_Controller_Stop = dc599, cs_Controller_Stop = dc600, cv_Controller_Stop = dc601, PS_retries_Controller_Stop = dc602, ADC_retries_Controller_Stop = dc603, configLoaded_Controller_Stop = dc604, currPhase_Controller_Stop = dc605, oldPhase_Controller_Stop = dc606, PSVrequested_Controller_Stop = dc607, mode_Controller_Stop = dc608, state_InValve1 = Closed)
+     + (s1_Controller_Stop == 17) ->
+         setValveState_c(Out, Open) .
+         P(s1_Controller_Stop = 26, phase_Controller_Stop = dc616, cs_Controller_Stop = dc617, cv_Controller_Stop = dc618, PS_retries_Controller_Stop = dc619, ADC_retries_Controller_Stop = dc620, configLoaded_Controller_Stop = dc621, currPhase_Controller_Stop = dc622, oldPhase_Controller_Stop = dc623, PSVrequested_Controller_Stop = dc624, mode_Controller_Stop = dc625, state_OutValve1 = Open)
+     + (s1_Controller_Stop == 18) ->
+         alarm_c(High) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc626, cs_Controller_Stop = dc627, cv_Controller_Stop = dc628, PS_retries_Controller_Stop = dc629, ADC_retries_Controller_Stop = dc630, configLoaded_Controller_Stop = dc631, mode_Controller_Stop = dc632, high_VisualAlarms = true)
+     + (s1_Controller_Stop == 19) ->
+         alarm_c(Medium) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc633, cs_Controller_Stop = dc634, cv_Controller_Stop = dc635, PS_retries_Controller_Stop = dc636, ADC_retries_Controller_Stop = dc637, configLoaded_Controller_Stop = dc638, mode_Controller_Stop = dc639, medium_VisualAlarms = true)
+     + (s1_Controller_Stop == 20) ->
+         setValveState_c(Out, Open) .
+         P(s1_Controller_Stop = 25, cs_Controller_Stop = dc640, cv_Controller_Stop = dc641, PS_retries_Controller_Stop = dc642, ADC_retries_Controller_Stop = dc643, configLoaded_Controller_Stop = dc644, oldPhase_Controller_Stop = dc645, mode_Controller_Stop = dc646, state_OutValve1 = Open)
+     + (s1_Controller_Stop == 21) ->
+         setValveState_c(Out, Open) .
+         P(s1_Controller_Stop = 24, phase_Controller_Stop = dc647, cs_Controller_Stop = dc648, cv_Controller_Stop = dc649, PS_retries_Controller_Stop = dc650, ADC_retries_Controller_Stop = dc651, configLoaded_Controller_Stop = dc652, oldPhase_Controller_Stop = dc653, mode_Controller_Stop = dc654, state_OutValve1 = Open)
+     + (s1_Controller_Stop == 22) ->
+         setValveState_c(In, Open) .
+         P(s1_Controller_Stop = 23, phase_Controller_Stop = dc655, cs_Controller_Stop = dc656, cv_Controller_Stop = dc657, PS_retries_Controller_Stop = dc658, ADC_retries_Controller_Stop = dc659, configLoaded_Controller_Stop = dc660, oldPhase_Controller_Stop = dc661, mode_Controller_Stop = dc662, state_InValve1 = Open)
+     + (s1_Controller_Stop == 23) ->
+         setValveState_c(Out, Closed) .
+         P(s1_Controller_Stop = 13, phase_Controller_Stop = dc663, cs_Controller_Stop = dc664, cv_Controller_Stop = dc665, PS_retries_Controller_Stop = dc666, ADC_retries_Controller_Stop = dc667, configLoaded_Controller_Stop = dc668, oldPhase_Controller_Stop = dc669, mode_Controller_Stop = dc670, state_OutValve1 = Closed)
+     + (s1_Controller_Stop == 24) ->
+         setValveState_c(In, Closed) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc671, cs_Controller_Stop = dc672, cv_Controller_Stop = dc673, PS_retries_Controller_Stop = dc674, ADC_retries_Controller_Stop = dc675, configLoaded_Controller_Stop = dc676, currPhase_Controller_Stop = Expiration, oldPhase_Controller_Stop = currPhase_Controller_Stop, mode_Controller_Stop = dc677, state_InValve1 = Closed)
+     + (s1_Controller_Stop == 25) ->
+         setValveState_c(In, Closed) .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc678, cs_Controller_Stop = dc679, cv_Controller_Stop = dc680, PS_retries_Controller_Stop = dc681, ADC_retries_Controller_Stop = dc682, configLoaded_Controller_Stop = dc683, currPhase_Controller_Stop = phase_Controller_Stop, oldPhase_Controller_Stop = currPhase_Controller_Stop, mode_Controller_Stop = dc684, state_InValve1 = Closed)
+     + (s1_Controller_Stop == 26) ->
+         setValveState_c(In, Closed) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc685, cs_Controller_Stop = dc686, cv_Controller_Stop = dc687, PS_retries_Controller_Stop = dc688, ADC_retries_Controller_Stop = dc689, configLoaded_Controller_Stop = dc690, currPhase_Controller_Stop = dc691, oldPhase_Controller_Stop = dc692, PSVrequested_Controller_Stop = dc693, mode_Controller_Stop = VentilationOff, state_InValve1 = Closed)
+     + (s1_Controller_Stop == 27) ->
+         alarm_c(High) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc694, cs_Controller_Stop = dc695, cv_Controller_Stop = dc696, PS_retries_Controller_Stop = dc697, ADC_retries_Controller_Stop = dc698, configLoaded_Controller_Stop = dc699, oldPhase_Controller_Stop = dc700, PSVrequested_Controller_Stop = dc701, mode_Controller_Stop = dc702, high_VisualAlarms = true)
+     + (s1_Controller_Stop == 28) ->
+         alarm_c(Medium) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc703, cs_Controller_Stop = dc704, cv_Controller_Stop = dc705, PS_retries_Controller_Stop = dc706, ADC_retries_Controller_Stop = dc707, configLoaded_Controller_Stop = dc708, oldPhase_Controller_Stop = dc709, PSVrequested_Controller_Stop = dc710, mode_Controller_Stop = dc711, medium_VisualAlarms = true)
+     + (s1_Controller_Stop == 29) ->
+         setValveState_c(Out, Open) .
+         P(s1_Controller_Stop = 33, phase_Controller_Stop = dc712, cs_Controller_Stop = dc713, cv_Controller_Stop = dc714, PS_retries_Controller_Stop = dc715, ADC_retries_Controller_Stop = dc716, configLoaded_Controller_Stop = dc717, currPhase_Controller_Stop = dc718, oldPhase_Controller_Stop = dc719, PSVrequested_Controller_Stop = dc720, mode_Controller_Stop = dc721, state_OutValve1 = Open)
+     + (s1_Controller_Stop == 30) ->
+         alarm_c(High) .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc722, cs_Controller_Stop = dc723, cv_Controller_Stop = dc724, PS_retries_Controller_Stop = dc725, ADC_retries_Controller_Stop = dc726, configLoaded_Controller_Stop = dc727, currPhase_Controller_Stop = dc728, oldPhase_Controller_Stop = dc729, PSVrequested_Controller_Stop = dc730, mode_Controller_Stop = PCV, high_VisualAlarms = true)
+     + (s1_Controller_Stop == 31) ->
+         setValveState_c(In, Open) .
+         P(s1_Controller_Stop = 32, phase_Controller_Stop = dc731, cs_Controller_Stop = dc732, cv_Controller_Stop = dc733, PS_retries_Controller_Stop = dc734, ADC_retries_Controller_Stop = dc735, configLoaded_Controller_Stop = dc736, currPhase_Controller_Stop = dc737, oldPhase_Controller_Stop = dc738, PSVrequested_Controller_Stop = dc739, mode_Controller_Stop = dc740, state_InValve1 = Open)
+     + (s1_Controller_Stop == 32) ->
+         setValveState_c(Out, Closed) .
+         P(s1_Controller_Stop = 12, phase_Controller_Stop = dc741, cs_Controller_Stop = dc742, cv_Controller_Stop = dc743, PS_retries_Controller_Stop = dc744, ADC_retries_Controller_Stop = dc745, configLoaded_Controller_Stop = dc746, currPhase_Controller_Stop = dc747, oldPhase_Controller_Stop = dc748, PSVrequested_Controller_Stop = dc749, mode_Controller_Stop = dc750, state_OutValve1 = Closed)
+     + (s1_Controller_Stop == 33) ->
+         setValveState_c(In, Closed) .
+         P(s1_Controller_Stop = 4, phase_Controller_Stop = dc751, cs_Controller_Stop = dc752, cv_Controller_Stop = dc753, PS_retries_Controller_Stop = dc754, ADC_retries_Controller_Stop = dc755, configLoaded_Controller_Stop = dc756, currPhase_Controller_Stop = Expiration, oldPhase_Controller_Stop = dc757, PSVrequested_Controller_Stop = dc758, mode_Controller_Stop = dc759, state_InValve1 = Closed)
+     + (s1_Controller_Stop == 34) ->
+         setValveState_c(Out, Open) .
+         P(s1_Controller_Stop = 35, phase_Controller_Stop = dc760, cs_Controller_Stop = dc761, cv_Controller_Stop = dc762, PS_retries_Controller_Stop = dc763, ADC_retries_Controller_Stop = dc764, configLoaded_Controller_Stop = dc765, currPhase_Controller_Stop = dc766, oldPhase_Controller_Stop = dc767, PSVrequested_Controller_Stop = dc768, mode_Controller_Stop = dc769, state_OutValve1 = Open)
+     + (s1_Controller_Stop == 36 && s13_GUI_Stop == 12) ->
+         error_c .
+         P(s1_Controller_Stop = 11, phase_Controller_Stop = dc780, cs_Controller_Stop = dc781, cv_Controller_Stop = dc782, PS_retries_Controller_Stop = dc783, ADC_retries_Controller_Stop = dc784, configLoaded_Controller_Stop = dc785, currPhase_Controller_Stop = dc786, oldPhase_Controller_Stop = dc787, PSVrequested_Controller_Stop = dc788, mode_Controller_Stop = dc789, s13_GUI_Stop = 13, mode_GUI_Stop = dc837)
+     + (s1_Controller_Stop == 37 && s13_GUI_Stop == 12) ->
+         selfTestPassed_c .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc790, cs_Controller_Stop = dc791, cv_Controller_Stop = dc792, PS_retries_Controller_Stop = dc793, ADC_retries_Controller_Stop = dc794, configLoaded_Controller_Stop = dc795, currPhase_Controller_Stop = dc796, oldPhase_Controller_Stop = dc797, PSVrequested_Controller_Stop = dc798, mode_Controller_Stop = VentilationOff, s13_GUI_Stop = 1, mode_GUI_Stop = Menu_GUI)
+     + ((s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) && PSV == mode_ExposeControllerMode) ->
+         changeVentilationSettings|controller_Mode_c(PSV) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PSV_GUI)
+     + ((s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) && PCV == mode_ExposeControllerMode) ->
+         changeVentilationSettings|controller_Mode_c(PCV) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI)
+     + (s13_GUI_Stop == 6 && PCV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PCV) .
+         P(s13_GUI_Stop = 7, mode_GUI_Stop = dc818)
+     + (s13_GUI_Stop == 6 && PSV == mode_ExposeControllerMode) ->
+         changeVentilationSettings|controller_Mode_c(PSV) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PSV_GUI)
+     + (s13_GUI_Stop == 6 && PCV == mode_ExposeControllerMode) ->
+         changeVentilationSettings|controller_Mode_c(PCV) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI)
+     + (s13_GUI_Stop == 7 && PCV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PCV) .
+         P(s13_GUI_Stop = 7, mode_GUI_Stop = dc823)
+     + (s13_GUI_Stop == 7 && PSV == mode_ExposeControllerMode) ->
+         changeVentilationSettings|controller_Mode_c(PSV) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PSV_GUI)
+     + (s13_GUI_Stop == 7 && PCV == mode_ExposeControllerMode) ->
+         changeVentilationSettings|controller_Mode_c(PCV) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI)
+     + (s13_GUI_Stop == 8 && PSV == mode_ExposeControllerMode) ->
+         changeVentilationSettings|controller_Mode_c(PSV) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PSV_GUI)
+     + (s13_GUI_Stop == 8 && PCV == mode_ExposeControllerMode) ->
+         changeVentilationSettings|controller_Mode_c(PCV) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI)
+     + (s13_GUI_Stop == 9 && PCV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PCV) .
+         P(s13_GUI_Stop = 9, mode_GUI_Stop = dc834)
+     + (s13_GUI_Stop == 9 && PSV == mode_ExposeControllerMode) ->
+         changeVentilationSettings|controller_Mode_c(PSV) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PSV_GUI)
+     + (s13_GUI_Stop == 11 && (mode_ExposeControllerMode == PSV || mode_ExposeControllerMode == PCV)) ->
+         controller_Mode_c(mode_ExposeControllerMode) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Ventilation_GUI)
+     + (s13_GUI_Stop == 11 && !(mode_ExposeControllerMode == PSV) && !(mode_ExposeControllerMode == PCV)) ->
+         controller_Mode_c(mode_ExposeControllerMode) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Start_GUI)
+     + sum v_ConfigurationMemory: Nat.
+         ((s13_GUI_Stop == 9 && s15_ConfigurationMemory == 1 && 4 <= v_ConfigurationMemory && v_ConfigurationMemory <= 50) && PCV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PCV)|set_RR_PCV_c(v_ConfigurationMemory) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1)
+     + sum v_ConfigurationMemory25: Nat.
+         ((s13_GUI_Stop == 9 && s15_ConfigurationMemory == 2 && 4 <= v_ConfigurationMemory25 && v_ConfigurationMemory25 <= 50) && PCV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PCV)|set_RR_PCV_c(v_ConfigurationMemory25) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + sum v_ConfigurationMemory4: Nat.
+         ((s13_GUI_Stop == 9 && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory4 && v_ConfigurationMemory4 <= 50) && PSV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PSV)|set_P_insp_PSV_c(v_ConfigurationMemory4) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PSV_ConfigurationMemory = v_ConfigurationMemory4)
+     + sum v_ConfigurationMemory29: Nat.
+         ((s13_GUI_Stop == 9 && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory29 && v_ConfigurationMemory29 <= 50) && PSV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PSV)|set_P_insp_PSV_c(v_ConfigurationMemory29) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = 15, P_insp_PSV_ConfigurationMemory = v_ConfigurationMemory29, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + sum v_ConfigurationMemory2: Nat.
+         ((s13_GUI_Stop == 9 && s15_ConfigurationMemory == 1 && 2 <= v_ConfigurationMemory2 && v_ConfigurationMemory2 <= 50) && PSV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PSV)|set_P_insp_PCV_c(v_ConfigurationMemory2) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = v_ConfigurationMemory2)
+     + sum v_ConfigurationMemory27: Nat.
+         ((s13_GUI_Stop == 9 && s15_ConfigurationMemory == 2 && 2 <= v_ConfigurationMemory27 && v_ConfigurationMemory27 <= 50) && PSV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PSV)|set_P_insp_PCV_c(v_ConfigurationMemory27) .
+         P(s13_GUI_Stop = 1, mode_GUI_Stop = Settings_via_PCV_GUI, s15_ConfigurationMemory = 1, P_insp_PCV_ConfigurationMemory = v_ConfigurationMemory27, P_insp_PSV_ConfigurationMemory = 15, Min_V_E_ConfigurationMemory = 2, Max_V_E_ConfigurationMemory = 0)
+     + (((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) && PCV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PCV)|startPSV_c .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc124, cs_Controller_Stop = dc125, cv_Controller_Stop = dc126, PS_retries_Controller_Stop = dc127, ADC_retries_Controller_Stop = dc128, configLoaded_Controller_Stop = dc129, PSVrequested_Controller_Stop = true, mode_Controller_Stop = dc130, s13_GUI_Stop = 8, mode_GUI_Stop = dc812)
+     + (((s1_Controller_Stop == 3 && !(PSVrequested_Controller_Stop && !(currPhase_Controller_Stop == Inspiration) && oldPhase_Controller_Stop == Inspiration)) && s13_GUI_Stop == 8) && PCV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PCV)|startPSV_c .
+         P(s1_Controller_Stop = 3, phase_Controller_Stop = dc124, cs_Controller_Stop = dc125, cv_Controller_Stop = dc126, PS_retries_Controller_Stop = dc127, ADC_retries_Controller_Stop = dc128, configLoaded_Controller_Stop = dc129, PSVrequested_Controller_Stop = true, mode_Controller_Stop = dc130, s13_GUI_Stop = 8, mode_GUI_Stop = dc829)
+     + ((s1_Controller_Stop == 9 && s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) && PSV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PSV)|startPCV_c .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc517, cs_Controller_Stop = dc518, cv_Controller_Stop = dc519, PS_retries_Controller_Stop = dc520, ADC_retries_Controller_Stop = dc521, configLoaded_Controller_Stop = dc522, currPhase_Controller_Stop = dc523, oldPhase_Controller_Stop = dc524, PSVrequested_Controller_Stop = dc525, mode_Controller_Stop = PCV, s13_GUI_Stop = 8, mode_GUI_Stop = dc811)
+     + ((s1_Controller_Stop == 9 && s13_GUI_Stop == 8) && PSV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PSV)|startPCV_c .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc517, cs_Controller_Stop = dc518, cv_Controller_Stop = dc519, PS_retries_Controller_Stop = dc520, ADC_retries_Controller_Stop = dc521, configLoaded_Controller_Stop = dc522, currPhase_Controller_Stop = dc523, oldPhase_Controller_Stop = dc524, PSVrequested_Controller_Stop = dc525, mode_Controller_Stop = PCV, s13_GUI_Stop = 8, mode_GUI_Stop = dc828)
+     + ((s1_Controller_Stop == 9 && s13_GUI_Stop == 1 && (mode_GUI_Stop == PCV_GUI || mode_GUI_Stop == PSV_GUI)) && PCV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PCV)|startPSV_c .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc526, cs_Controller_Stop = dc527, cv_Controller_Stop = dc528, PS_retries_Controller_Stop = dc529, ADC_retries_Controller_Stop = dc530, configLoaded_Controller_Stop = dc531, currPhase_Controller_Stop = dc532, oldPhase_Controller_Stop = dc533, PSVrequested_Controller_Stop = dc534, mode_Controller_Stop = PSV, s13_GUI_Stop = 8, mode_GUI_Stop = dc812)
+     + ((s1_Controller_Stop == 9 && s13_GUI_Stop == 8) && PCV == mode_ExposeControllerMode) ->
+         controller_Mode_c(PCV)|startPSV_c .
+         P(s1_Controller_Stop = 1, phase_Controller_Stop = dc526, cs_Controller_Stop = dc527, cv_Controller_Stop = dc528, PS_retries_Controller_Stop = dc529, ADC_retries_Controller_Stop = dc530, configLoaded_Controller_Stop = dc531, currPhase_Controller_Stop = dc532, oldPhase_Controller_Stop = dc533, PSVrequested_Controller_Stop = dc534, mode_Controller_Stop = PSV, s13_GUI_Stop = 8, mode_GUI_Stop = dc829)
+     + delta;
+
+init P(8, dc, dc1, dc2, dc3, dc4, dc5, dc6, dc7, dc8, dc9, Stop, Working, Working, 20, Working, 20, Working, 15, Working, 10, Working, 50, Closed, Open, 5, dc804, false, false, 1, 15, 15, 2, 0);
