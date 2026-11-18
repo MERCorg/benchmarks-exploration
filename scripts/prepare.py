@@ -9,7 +9,7 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run txt2lps on every .lps.txt file in a directory"
+        description="Run txt2lps on every .lps.txt file in a directory, writing each .lps next to it"
     )
     parser.add_argument("mcrl2_path", help="Path to the directory containing the txt2lps binary")
     parser.add_argument("lps_dir", help="Directory to search for .lps.txt files")
@@ -22,11 +22,8 @@ def main():
         print(f"No .lps.txt files found in {args.lps_dir}", file=sys.stderr)
         sys.exit(1)
 
-    tmp_dir = Path("input")
-    tmp_dir.mkdir(exist_ok=True)
-
     for lps_file in lps_files:
-        out_file = tmp_dir / lps_file.with_suffix("").name  # strip .txt -> .lps
+        out_file = lps_file.with_suffix("")  # strip .txt -> .lps, next to the input
         print(f"  {lps_file} -> {out_file}", flush=True)
         subprocess.run([txt2lps, str(lps_file), str(out_file)], check=True)
 

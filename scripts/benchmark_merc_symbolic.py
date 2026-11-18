@@ -8,6 +8,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "merc-py"))
 from merc import Benchmarks, ToolNotFoundError  # type: ignore
 
+from cases import collect_lps_files
+
 MERC_STRATEGIES = ["breadth-first", "chaining", "saturation"]
 
 
@@ -25,7 +27,7 @@ def main():
         description="Run merc-lps symbolic exploration on every .lps file in a directory"
     )
     parser.add_argument("merc_path", help="Path to the directory containing the merc-lps binary")
-    parser.add_argument("lps_dir", help="Directory to search for .lps files")
+    parser.add_argument("cases_dir", help="Cases directory; uses its top-level .lps files and those in symbolic/")
     parser.add_argument("--output", "-o", default="results.ndjson", help="Output NDJSON file (default: results.ndjson)")
     parser.add_argument("--max-threads", type=int, default=1,
                         help="Maximum thread count")
@@ -34,17 +36,13 @@ def main():
     args = parser.parse_args()
 
     dump_dir = os.path.dirname(os.path.abspath(args.output))
-    lps_files = sorted(Path(args.lps_dir).rglob("*.lps"))
-
-    if not lps_files:
-        print(f"No .lps files found in {args.lps_dir}", file=sys.stderr)
-        sys.exit(1)
+    lps_files = collect_lps_files(args.cases_dir, "symbolic")
 
     merc_lps = os.path.join(args.merc_path, "merc-lps")
     benchmarks = Benchmarks(runs=args.runs, max_threads=args.max_threads, dump_dir=dump_dir)
 
     for lps_file in lps_files:
-        name = str(lps_file.relative_to(args.lps_dir))
+        name = lps_file.name
         for t in thread_counts(args.max_threads):
             for strategy in MERC_STRATEGIES:
                 arguments = ["--timings", "explore", "--strategy", strategy, "--groups", "used",
